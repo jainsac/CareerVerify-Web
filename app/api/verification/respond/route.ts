@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   if (!membership) {
     return NextResponse.json({ error: "You are not authorized to respond for the prior organization" }, { status: 403 });
   }
-  if (request.status !== "PENDING" && !request.response) {
+  if (request.status !== "PENDING" || request.response) {
     return NextResponse.json({ error: "Verification request is no longer actionable" }, { status: 409 });
   }
 

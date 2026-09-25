@@ -11,11 +11,12 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   const token = String(body.token ?? "").trim();
-  if (!token) return NextResponse.json({ error: "Token required" }, { status: 400 });
+  const requestId = String(body.requestId ?? "").trim();
+  if (!token && !requestId) return NextResponse.json({ error: "token or requestId required" }, { status: 400 });
 
-  const hash = crypto.createHash("sha256").update(token).digest("hex");
+  const hash = token ? crypto.createHash("sha256").update(token).digest("hex") : "";
   const request = await prisma.verificationRequest.findUnique({
-    where: { tokenHash: hash },
+    where: token ? { tokenHash: hash } : { id: requestId },
     include: { response: true },
   });
 

@@ -1,1 +1,14 @@
-import {NextResponse} from "next/server"; import crypto from "crypto"; export async function POST(req:Request){const b=await req.json();const careerId=String(b.careerId??"").trim();if(!careerId)return NextResponse.json({error:"careerId required"},{status:400});const ref=crypto.createHash("sha256").update(careerId+crypto.randomBytes(16).toString("hex")).digest("hex").slice(0,32);const base=process.env.NEXT_PUBLIC_APP_URL||"http://localhost:3000";return NextResponse.json({reference:ref,url:base+"/verify/profile/"+ref})}
+import { NextResponse } from "next/server";
+import crypto from "crypto";
+import { currentUser } from "../../../../lib/auth";
+import { prisma } from "../../../../lib/prisma";
+export async function POST() {
+  const user = await currentUser();
+  if (!user?.careerProfile) return NextResponse.json({ error: "Employee authentication required" }, { status: 401 });
+  const raw = crypto.randomBytes(32).toString("hex");
+  const hash = crypto.createHash("sha256").update(raw).digest("hex");
+  const token = await prisma.publicVerificationToken.create({ data: { careerProfileId: user.careerProfile.id, tokenHash: hash } });
+  await prisma.auditEvent.create({ data: { actorUserId: user.id, action: "PUBLIC_VERIFICATION_TOKEN_CREATED", entityType: "PublicVerificationToken", entityId: token.id } });
+  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  return NextResponse.json({ reference: raw, url: base + "/verify/profile/" + raw });
+}

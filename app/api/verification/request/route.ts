@@ -18,6 +18,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "careerId, priorOrgId and requestingOrgId are required" }, { status: 400 });
   }
 
+  const requestingOrganization = await prisma.organization.findUnique({ where: { id: requestingOrgId } });
+  if (!requestingOrganization?.verifiedAt) return NextResponse.json({ error: "Requesting organization must be platform-verified" }, { status: 403 });
+
   const membership = await prisma.organizationMember.findFirst({
     where: { userId: user.id, organizationId: requestingOrgId },
   });

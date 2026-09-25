@@ -1,0 +1,13 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+enum UserRole { EMPLOYEE EMPLOYER ADMIN }
+enum EmploymentStatus { ACTIVE LEFT DISPUTED }
+enum VerificationStatus { PENDING APPROVED VERIFIED REJECTED DISPUTED EXPIRED }
+model User { id String @id @default(cuid()) email String @unique passwordHash String name String role UserRole @default(EMPLOYEE) careerProfile CareerProfile? organizationMemberships OrganizationMember[] createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
+model CareerProfile { id String @id @default(cuid()) userId String @unique careerId String @unique user User @relation(fields:[userId],references:[id],onDelete:Cascade) employments EmploymentRecord[] createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
+model Organization { id String @id @default(cuid()) name String cin String? gstin String? verifiedAt DateTime? members OrganizationMember[] employments EmploymentRecord[] createdAt DateTime @default(now()) }
+model OrganizationMember { id String @id @default(cuid()) userId String organizationId String role String user User @relation(fields:[userId],references:[id],onDelete:Cascade) organization Organization @relation(fields:[organizationId],references:[id],onDelete:Cascade) @@unique([userId,organizationId]) }
+model EmploymentRecord { id String @id @default(cuid()) careerProfileId String organizationId String employeeCode String? designation String department String? employmentType String? joinedAt DateTime leftAt DateTime? status EmploymentStatus @default(ACTIVE) experienceLetterRef String? remarks String? careerProfile CareerProfile @relation(fields:[careerProfileId],references:[id],onDelete:Cascade) organization Organization @relation(fields:[organizationId],references:[id],onDelete:Cascade) createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
+model VerificationRequest { id String @id @default(cuid()) careerProfileId String requestingOrgId String priorOrgId String status VerificationStatus @default(PENDING) tokenHash String @unique expiresAt DateTime consentedAt DateTime? respondedAt DateTime? careerProfile CareerProfile @relation(fields:[careerProfileId],references:[id],onDelete:Cascade) createdAt DateTime @default(now()) }
+model VerificationResponse { id String @id @default(cuid()) requestId String @unique verified Boolean designation String? joinedAt DateTime? leftAt DateTime? notes String? createdAt DateTime @default(now()) request VerificationRequest @relation(fields:[requestId],references:[id],onDelete:Cascade) }
+model AuditEvent { id String @id @default(cuid()) actorUserId String? action String entityType String entityId String metadata Json? createdAt DateTime @default(now()) }

@@ -1,0 +1,1 @@
+import crypto from "crypto"; export function createOpaqueToken(){const token=crypto.randomBytes(32).toString("base64url");return {token,tokenHash:crypto.createHash("sha256").update(token).digest("hex")}}

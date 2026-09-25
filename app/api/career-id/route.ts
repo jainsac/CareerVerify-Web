@@ -1,0 +1,1 @@
+import {NextResponse} from "next/server"; import {generateCareerId} from "@/lib/career-id"; export async function GET(){return NextResponse.json({careerId:generateCareerId()})}

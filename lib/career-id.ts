@@ -1,0 +1,1 @@
+import crypto from "crypto"; export function generateCareerId(){const x=crypto.randomBytes(6).toString("hex").toUpperCase(); return "CV-IND-"+x.slice(0,4)+"-"+x.slice(4,8)+"-"+x.slice(8,12);}

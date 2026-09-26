@@ -4,7 +4,7 @@ import { currentUser } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
 export async function POST(req:Request){
  const u=await currentUser(); if(!u?.careerProfile)return NextResponse.json({error:"Employee authentication required"},{status:401});
- const b=await req.json(); const employmentRecordId=String(b.employmentRecordId??"").trim(); const documentRef=String(b.documentRef??"").trim(); const storagePath=String(b.storagePath??"").trim();
+ const b=await req.json(); const employmentRecordId=String(b.employmentRecordId??"").trim(); const documentRef=String(b.documentRef??"").trim(); const storagePath=String(b.storagePath??"").trim(); const fileUrl=String(b.fileUrl??"").trim();
  if(!employmentRecordId||!documentRef)return NextResponse.json({error:"employmentRecordId and documentRef are required"},{status:400});
  const e=await prisma.employmentRecord.findFirst({where:{id:employmentRecordId,careerProfileId:u.careerProfile.id}});
  if(!e)return NextResponse.json({error:"Employment record not found"},{status:404});

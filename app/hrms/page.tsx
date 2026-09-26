@@ -31,7 +31,7 @@ export default function HRMS() {
     <nav className="nav">
       <Link className="brand" href="/employer">Career<span>Verify</span></Link>
       <Link className="btn alt" href="/candidate">Career Profile</Link>
-      <Link className="btn alt" href="/verify">Verification</Link>
+      <Link className="btn alt" href="/verify">Verification</Link>\n      <Link className="btn alt" href="/hrms/employees">Employees</Link>
     </nav>
     <div className="card">
       <div className="pill">COMPANY HRMS</div>

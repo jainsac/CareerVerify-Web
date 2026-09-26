@@ -38,6 +38,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Requesting and prior organization must be different" }, { status: 400 });
   }
 
+  const existing = await prisma.verificationRequest.findFirst({ where: { careerProfileId: profile.id, requestingOrgId, priorOrgId, status: "PENDING", expiresAt: { gt: new Date() } }, select: { id: true, expiresAt: true } });
+  if (existing) return NextResponse.json({ error: "An active verification request already exists", requestId: existing.id, expiresAt: existing.expiresAt }, { status: 409 });
+
   const employment = await prisma.employmentRecord.findFirst({
     where: { careerProfileId: profile.id, organizationId: priorOrgId },
     select: { id: true },

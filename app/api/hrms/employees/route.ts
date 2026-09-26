@@ -22,35 +22,61 @@ export async function POST(req: Request) {
   const employeeCode = String(body.employeeCode || "").trim();
   const joiningDate = new Date(body.joiningDate);
 
-  const membership = await orgForUser(user.id, organizationId);
-  if (!membership) return NextResponse.json({ error: "You are not authorized for this organization." }, { status: 403 });
+  if (!(await orgForUser(user.id, organizationId))) {
+    return NextResponse.json({ error: "You are not authorized for this organization." }, { status: 403 });
+  }
   if (!name || !companyEmail || !designation || Number.isNaN(joiningDate.getTime())) {
     return NextResponse.json({ error: "Name, company email, designation and joining date are required." }, { status: 400 });
   }
 
-  const existing = await prisma.companyEmployeeAccount.findUnique({ where: { organizationId_email: { organizationId, email: companyEmail } } });
-  if (existing) return NextResponse.json({ error: "An HRMS employee account already exists for this email." }, { status: 409 });
+  const existingAccount = await prisma.companyEmployeeAccount.findUnique({
+    where: { organizationId_email: { organizationId, email: companyEmail } },
+  });
+  if (existingAccount) {
+    return NextResponse.json({ error: "An HRMS employee account already exists for this email." }, { status: 409 });
+  }
 
-  const careerId = await generateCareerId();
+  const existingUser = await prisma.user.findUnique({
+    where: { email: companyEmail },
+    include: { careerProfile: true },
+  });
+
+  if (existingUser && !existingUser.careerProfile) {
+    return NextResponse.json({
+      error: "This company email belongs to an existing account that does not have a Career Profile. Use an employee email/account with a Career Profile.",
+    }, { status: 409 });
+  }
+
+  const careerId = existingUser?.careerProfile?.careerId ?? await generateCareerId();
   const token = crypto.randomBytes(32).toString("hex");
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
   const result = await prisma.$transaction(async tx => {
-    const profile = await tx.careerProfile.create({
-      data: {
-        careerId,
-        user: {
-          create: {
-            email: companyEmail,
-            name,
-            passwordHash: crypto.randomBytes(32).toString("hex"),
-            accountStatus: "INVITED",
-            invitedAt: new Date(),
+    const profile = existingUser?.careerProfile
+      ? existingUser.careerProfile
+      : await tx.careerProfile.create({
+          data: {
+            careerId,
+            user: {
+              create: {
+                email: companyEmail,
+                phone: phone || null,
+                name,
+                passwordHash: crypto.randomBytes(32).toString("hex"),
+                accountStatus: "INVITED",
+                invitedAt: new Date(),
+              },
+            },
           },
-        },
-      },
-      include: { user: true },
-    });
+        });
+
+    if (existingUser?.careerProfile) {
+      const duplicateEmployment = await tx.employmentRecord.findFirst({
+        where: { careerProfileId: profile.id, organizationId, status: { in: ["ACTIVE", "DISPUTED"] } },
+        select: { id: true },
+      });
+      if (duplicateEmployment) throw new Error("DUPLICATE_EMPLOYMENT");
+    }
 
     const employment = await tx.employmentRecord.create({
       data: {
@@ -70,6 +96,8 @@ export async function POST(req: Request) {
         employmentRecordId: employment.id,
         email: companyEmail,
         phone: phone || null,
+        status: "INVITED",
+        invitedAt: new Date(),
       },
     });
 
@@ -83,14 +111,21 @@ export async function POST(req: Request) {
       },
     });
 
-    return { careerId, employmentId: employment.id, inviteToken: token };
+    return { careerId: profile.careerId, employmentId: employment.id, inviteToken: token, existingAccount: Boolean(existingUser?.careerProfile) };
+  }).catch(error => {
+    if (error instanceof Error && error.message === "DUPLICATE_EMPLOYMENT") return null;
+    throw error;
   });
 
+  if (!result) return NextResponse.json({ error: "This employee already has an active employment record with your organization." }, { status: 409 });
+
   return NextResponse.json({
-    status: "INVITED",
+    status: result.existingAccount ? "CLAIM_PENDING" : "INVITED",
     careerId: result.careerId,
     employmentId: result.employmentId,
     inviteToken: result.inviteToken,
-    message: "Employee provisioned. Send the invitation through your configured email/SMS provider; never send a password."
+    message: result.existingAccount
+      ? "Existing CareerVerify identity found. The employee must accept this invitation while signed in to their CareerVerify account. No existing password was changed."
+      : "Employee provisioned. Send the invitation through your configured email/SMS provider; never send a password.",
   }, { status: 201 });
 }

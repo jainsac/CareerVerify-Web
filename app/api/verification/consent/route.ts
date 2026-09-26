@@ -21,7 +21,8 @@ export async function POST(req: Request) {
     data: { consentedAt: new Date() },
   });
 
-  await prisma.notification.create({ data: { userId: request.requestingOrgId, type: "CONSENT_GRANTED", title: "Employee consent granted", message: "Employee consent has been granted for a verification request." } });
+  const requesterMembers = await prisma.organizationMember.findMany({ where: { organizationId: request.requestingOrgId }, select: { userId: true } });
+  if (requesterMembers.length) await prisma.notification.createMany({ data: requesterMembers.map(m => ({ userId: m.userId, type: "CONSENT_GRANTED", title: "Employee consent granted", message: "Employee consent has been granted for a verification request." })) });
 
   await prisma.auditEvent.create({
     data: {

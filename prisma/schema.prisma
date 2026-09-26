@@ -171,7 +171,7 @@ model EmployeeInvite {
   @@index([organizationId, expiresAt])
 }
 
-model ExperienceLetter {
+model EmploymentExitEvent {\n  id String @id @default(cuid())\n  employmentRecordId String\n  action String\n  reason String?\n  performedByUserId String\n  createdAt DateTime @default(now())\n  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)\n  @@index([employmentRecordId, createdAt])\n}\n\nmodel ExperienceLetter {
   id String @id @default(cuid())
   employmentRecordId String @unique
   documentRef String?

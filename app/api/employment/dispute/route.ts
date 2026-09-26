@@ -20,6 +20,8 @@ export async function POST(req: Request) {
   });
   if (!row) return NextResponse.json({ error: "Employment record not found" }, { status: 404 });
 
+  const dispute = await prisma.employmentDispute.create({ data: { employmentRecordId: id, raisedByUserId: user.id, reason } });
+
   const updated = await prisma.employmentRecord.update({
     where: { id },
     data: { status: "DISPUTED", remarks: reason },
@@ -35,5 +37,5 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ ok: true, employment: updated });
+  return NextResponse.json({ ok: true, employment: updated, disputeId: dispute.id });
 }

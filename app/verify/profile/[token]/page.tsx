@@ -1,0 +1,82 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Data = {
+  careerId: string;
+  employments: {
+    organization: string;
+    designation: string;
+    department?: string | null;
+    joinedAt: string;
+    leftAt?: string | null;
+    status: string;
+  }[];
+};
+
+export default function PublicProfile({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const [data, setData] = useState<Data | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    params
+      .then(({ token }) =>
+        fetch("/api/verification/public/" + encodeURIComponent(token)),
+      )
+      .then(async (r) => {
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error);
+        setData(d);
+      })
+      .catch((e) => setError(e.message));
+  }, [params]);
+
+  return (
+    <div className="wrap">
+      <div className="form card">
+        <div className="pill">PUBLIC VERIFICATION</div>
+        <h1>Career verification</h1>
+        {error ? (
+          <p className="notice">{error}</p>
+        ) : !data ? (
+          <p className="muted">Loading verification…</p>
+        ) : (
+          <>
+            <h2>{data.careerId}</h2>
+            <p className="muted">
+              Verified employment records currently published for this reference.
+            </p>
+            {data.employments.length ? (
+              <div className="grid">
+                {data.employments.map((e, i) => (
+                  <div className="card" key={i}>
+                    <h3>{e.organization}</h3>
+                    <p>
+                      {e.designation}
+                      {e.department ? " • " + e.department : ""}
+                    </p>
+                    <p className="muted">
+                      {new Date(e.joinedAt).toLocaleDateString()} –{" "}
+                      {e.leftAt
+                        ? new Date(e.leftAt).toLocaleDateString()
+                        : "Present"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">No published employment records.</p>
+            )}
+            <p className="notice">
+              Private identity data such as Aadhaar, PAN, email and mobile number is not displayed.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,27 @@
+"use client";
+import Link from "next/link";
+import {useEffect,useState} from "react";
+type Emp={id:string;designation:string;department?:string;joinedAt:string;leftAt?:string;status:string;organization:{name:string}};
+type Verification={id:string;status:string;expiresAt:string;consentedAt?:string|null;requestingOrganization:string;priorOrganization:string;response?:{verified:boolean}|null};
+function Letter({id,onDone}:{id:string;onDone:()=>void}) {
+ const [file,setFile]=useState<File|null>(null),[msg,setMsg]=useState("");
+ async function save(){
+  if(!file)return;
+  setMsg("Uploading…");
+  const form=new FormData(); form.append("employmentRecordId",id); form.append("file",file);
+  const r=await fetch("/api/experience-letter/upload",{method:"POST",body:form});
+  const d=await r.json();
+  setMsg(r.ok?"Experience letter uploaded and registered.":d.error||"Upload failed.");
+  if(r.ok)onDone();
+ }
+ return <div><input type="file" accept="application/pdf" onChange={e=>setFile(e.target.files?.[0]||null)}/><button className="btn alt" onClick={save} disabled={!file}>Upload & register</button>{msg&&<p className="muted">{msg}</p>}</div>
+}
+export default function Candidate(){
+ const [careerId,setCareerId]=useState(""),[rows,setRows]=useState<Emp[]>([]),[requests,setRequests]=useState<Verification[]>([]),[loading,setLoading]=useState(true),[message,setMessage]=useState("");
+ const loadRequests=()=>fetch("/api/verification/requests").then(r=>r.ok?r.json():[]).then(setRequests);
+ useEffect(()=>{fetch("/api/me").then(r=>r.json()).then(d=>setCareerId(d.careerProfile?.careerId||""));fetch("/api/employment").then(r=>r.ok?r.json():[]).then(setRows).finally(()=>setLoading(false));loadRequests()},[]);
+ const consent=async(id:string)=>{setMessage("Submitting consent…");const r=await fetch("/api/verification/consent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:id,consent:true})});const d=await r.json();setMessage(r.ok?"Consent granted. The prior employer can now respond.":d.error||"Unable to grant consent.");if(r.ok)loadRequests()};
+ return <div className="wrap"><nav className="nav"><Link className="brand" href="/">Career<span>Verify</span></Link><Link className="btn alt" href="/verify">Verification</Link></nav><div className="card"><div className="pill">EMPLOYEE WORKSPACE</div><h1>Your Career ID</h1><div className="stat">{careerId||"Loading…"}</div><p className="muted">Share this ID when an employer needs to initiate verification. Private records remain protected.</p></div>
+ <section className="section"><h2>Verification requests</h2>{message&&<p className="notice">{message}</p>}{requests.length?<div className="grid">{requests.map(x=><div className="card" key={x.id}><div className="pill">{x.status}</div><h3>{x.requestingOrganization}</h3><p>Requesting verification from <strong>{x.priorOrganization}</strong></p><p className="muted">Expires {new Date(x.expiresAt).toLocaleDateString()}</p>{x.status==="PENDING"&&!x.consentedAt?<button className="btn" onClick={()=>consent(x.id)}>Give consent</button>:x.consentedAt&&x.status==="PENDING"?<p className="muted">Consent granted. Awaiting prior employer response.</p>:x.response?<p>{x.response.verified?"Verification confirmed.":"Verification not confirmed."}</p>:null}</div>)}</div>:<div className="card"><h3>No verification requests</h3><p className="muted">New employer verification requests will appear here.</p></div>}</section>
+ <section className="section"><h2>Employment history</h2>{loading?<p className="muted">Loading…</p>:rows.length?<div className="grid">{rows.map(x=><div className="card" key={x.id}><h3>{x.organization.name}</h3><p>{x.designation}{x.department?" • "+x.department:""}</p><Letter id={x.id} onDone={()=>{}}/><p className="muted">{new Date(x.joinedAt).toLocaleDateString()} – {x.leftAt?new Date(x.leftAt).toLocaleDateString():"Present"} • {x.status}</p></div>)}</div>:<div className="card"><h3>No employment records yet</h3><p className="muted">Verified employment records will appear here.</p></div>}</section></div>
+}

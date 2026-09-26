@@ -1,0 +1,10 @@
+"use client";
+import Link from "next/link";
+import {useEffect,useState} from "react";
+type Emp={id:string;designation:string;joinedAt:string;leftAt?:string;status:string;organization:{name:string}};
+export default function Disputes(){
+ const [rows,setRows]=useState<Emp[]>([]),[reason,setReason]=useState(""),[selected,setSelected]=useState(""),[msg,setMsg]=useState("");
+ useEffect(()=>{fetch("/api/employment").then(r=>r.ok?r.json():[]).then(setRows)},[]);
+ async function submit(){if(!selected||reason.trim().length<3){setMsg("Select a record and enter a reason.");return}const r=await fetch("/api/employment/dispute",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({employmentId:selected,reason})});const d=await r.json();setMsg(r.ok?"Dispute submitted for review.":d.error||"Unable to submit dispute.");if(r.ok){setReason("");setSelected("");setRows(rows.map(x=>x.id===selected?{...x,status:"DISPUTED"}:x))}}
+ return <div className="wrap"><nav className="nav"><Link className="brand" href="/">Career<span>Verify</span></Link><Link href="/candidate">Employee workspace</Link></nav><div className="form card"><div className="pill">DISPUTE A RECORD</div><h1>Employment record disputes</h1><p className="muted">Select an employment record that you believe contains incorrect information. The original record is preserved and the dispute is audited.</p><div className="field"><label>Employment record</label><select value={selected} onChange={e=>setSelected(e.target.value)}><option value="">Select a record</option>{rows.map(x=><option key={x.id} value={x.id}>{x.organization.name} — {x.designation} ({x.status})</option>)}</select></div><div className="field"><label>Reason</label><textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="Describe the factual information you believe is incorrect." /></div>{msg&&<div className="notice">{msg}</div>}<button className="btn" onClick={submit}>Submit dispute</button></div></div>
+}

@@ -5,7 +5,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-enum UserRole {
+enum AccountStatus {\n  INVITED\n  ACTIVE\n  SUSPENDED\n  DEACTIVATED\n  CLAIM_PENDING\n}\nenum UserRole {
   EMPLOYEE
   EMPLOYER
   ADMIN
@@ -86,7 +86,7 @@ model EmploymentRecord {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-model ExperienceLetter {
+model CompanyEmployeeAccount {\n  id String @id @default(cuid())\n  organizationId String\n  employmentRecordId String @unique\n  email String\n  phone String?\n  passwordHash String?\n  status AccountStatus @default(INVITED)\n  invitedAt DateTime @default(now())\n  activatedAt DateTime?\n  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)\n  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)\n  @@unique([organizationId, email])\n}\nmodel EmployeeInvite {\n  id String @id @default(cuid())\n  organizationId String\n  employmentRecordId String\n  email String\n  tokenHash String @unique\n  expiresAt DateTime\n  acceptedAt DateTime?\n  createdAt DateTime @default(now())\n  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)\n  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)\n  @@index([organizationId, expiresAt])\n}\nmodel ExperienceLetter {
   id String @id @default(cuid())
   employmentRecordId String @unique
   documentRef String?

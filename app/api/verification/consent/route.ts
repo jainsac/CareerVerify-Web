@@ -21,6 +21,8 @@ export async function POST(req: Request) {
     data: { consentedAt: new Date() },
   });
 
+  await prisma.notification.create({ data: { userId: request.requestingOrgId, type: "CONSENT_GRANTED", title: "Employee consent granted", message: "Employee consent has been granted for a verification request." } });
+
   await prisma.auditEvent.create({
     data: {
       actorUserId: user.id,

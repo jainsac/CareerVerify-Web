@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { currentUser } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
-import { generateCareerId } from "../../../../lib/career-id";
+import { generateUniqueCareerId } from "../../../../lib/career-id";
 
 async function orgForUser(userId: string, organizationId: string) {
   return prisma.organizationMember.findFirst({ where: { userId, organizationId } });

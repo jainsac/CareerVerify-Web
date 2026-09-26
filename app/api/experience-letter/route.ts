@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { currentUser } from "../../../../lib/auth";
-import { prisma } from "../../../../lib/prisma";
+import { currentUser } from "../../../lib/auth";
+import { prisma } from "../../../lib/prisma";
 export async function POST(req:Request){
  const u=await currentUser(); if(!u?.careerProfile)return NextResponse.json({error:"Employee authentication required"},{status:401});
  const b=await req.json(); const employmentRecordId=String(b.employmentRecordId??"").trim(); const documentRef=String(b.documentRef??"").trim(); const storagePath=String(b.storagePath??"").trim(); const fileUrl=String(b.fileUrl??"").trim();
@@ -20,5 +20,5 @@ export async function POST(req:Request){
 export async function GET(){
  const u=await currentUser(); if(!u?.careerProfile)return NextResponse.json({error:"Authentication required"},{status:401});
  const rows=await prisma.experienceLetter.findMany({where:{employmentRecord:{careerProfileId:u.careerProfile.id}},include:{employmentRecord:{include:{organization:true}}}});
- return NextResponse.json(rows.map(x=>({id:x.id,employmentRecordId:x.employmentRecordId,organization:x.employmentRecord.organization.name,designation:x.employmentRecord.designation,issuedAt:x.issuedAt,revokedAt:x.revokedAt,documentHash:x.documentHash})));
+ return NextResponse.json(rows.map((x: (typeof rows)[number])=>({id:x.id,employmentRecordId:x.employmentRecordId,organization:x.employmentRecord.organization.name,designation:x.employmentRecord.designation,issuedAt:x.issuedAt,revokedAt:x.revokedAt,documentHash:x.documentHash})));
 }

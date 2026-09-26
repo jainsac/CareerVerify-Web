@@ -78,6 +78,7 @@ model EmploymentRecord {
   experienceLetterRef String?
   experienceLetter ExperienceLetter?
   remarks String?
+  disputes EmploymentDispute[]
   careerProfile CareerProfile @relation(fields: [careerProfileId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -92,6 +93,18 @@ model ExperienceLetter {
   verificationTokenHash String? @unique
   issuedAt DateTime @default(now())
   revokedAt DateTime?
+  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+}
+model EmploymentDispute {
+  id String @id @default(cuid())
+  employmentRecordId String
+  raisedByUserId String
+  reason String
+  status String @default("OPEN")
+  resolution String?
+  resolvedByUserId String?
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
   employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
 }
 model VerificationRequest {

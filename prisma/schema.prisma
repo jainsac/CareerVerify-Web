@@ -124,6 +124,11 @@ model EmploymentRecord {
   employmentType String?
   joinedAt DateTime
   leftAt DateTime?
+  resignationStatus String @default("NONE")
+  resignationSubmittedAt DateTime?
+  resignationReason String?
+  resignationNoticeDate DateTime?
+  resignationWithdrawnAt DateTime?
   status EmploymentStatus @default(ACTIVE)
   source String @default("MANUAL")
   externalEmployeeId String?
@@ -134,6 +139,8 @@ model EmploymentRecord {
   disputes EmploymentDispute[]
   companyEmployeeAccount CompanyEmployeeAccount?
   employeeInvites EmployeeInvite[]
+  exitHistory EmploymentExitEvent[]
+  resignationHistory EmploymentResignationEvent[]
   careerProfile CareerProfile @relation(fields: [careerProfileId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -171,7 +178,29 @@ model EmployeeInvite {
   @@index([organizationId, expiresAt])
 }
 
-model EmploymentExitEvent {\n  id String @id @default(cuid())\n  employmentRecordId String\n  action String\n  reason String?\n  performedByUserId String\n  createdAt DateTime @default(now())\n  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)\n  @@index([employmentRecordId, createdAt])\n}\n\nmodel ExperienceLetter {
+model EmploymentExitEvent {
+  id String @id @default(cuid())
+  employmentRecordId String
+  action String
+  reason String?
+  performedByUserId String
+  createdAt DateTime @default(now())
+  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+  @@index([employmentRecordId, createdAt])
+}
+
+model EmploymentResignationEvent {
+  id String @id @default(cuid())
+  employmentRecordId String
+  action String
+  reason String?
+  performedByUserId String
+  createdAt DateTime @default(now())
+  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+  @@index([employmentRecordId, createdAt])
+}
+
+model ExperienceLetter {
   id String @id @default(cuid())
   employmentRecordId String @unique
   documentRef String?

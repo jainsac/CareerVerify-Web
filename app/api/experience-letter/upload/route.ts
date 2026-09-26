@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { currentUser } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
+import crypto from "crypto";
 export async function POST(req:Request){
  const u=await currentUser(); if(!u?.careerProfile)return NextResponse.json({error:"Employee authentication required"},{status:401});
  const form=await req.formData(); const employmentRecordId=String(form.get("employmentRecordId")??""); const file=form.get("file");
@@ -11,6 +12,9 @@ export async function POST(req:Request){
  const e=await prisma.employmentRecord.findFirst({where:{id:employmentRecordId,careerProfileId:u.careerProfile.id}});
  if(!e)return NextResponse.json({error:"Employment record not found"},{status:404});
  if(!process.env.BLOB_READ_WRITE_TOKEN)return NextResponse.json({error:"Private document storage is not configured yet"},{status:503});
+ const bytes=Buffer.from(await file.arrayBuffer()); const documentHash=crypto.createHash("sha256").update(bytes).digest("hex");
  const blob=await put("experience-letters/"+u.careerProfile.id+"/"+crypto.randomUUID()+".pdf",file,{access:"private",addRandomSuffix:false});
- return NextResponse.json({ok:true,storagePath:blob.pathname,url:blob.url});
+ const result=await prisma.experienceLetter.upsert({where:{employmentRecordId:e.id},create:{employmentRecordId:e.id,documentRef:blob.pathname,storagePath:blob.pathname,documentHash},update:{documentRef:blob.pathname,storagePath:blob.pathname,documentHash,revokedAt:null}});
+ await prisma.employmentRecord.update({where:{id:e.id},data:{experienceLetterRef:result.id}});
+ return NextResponse.json({ok:true,letterId:result.id,storagePath:blob.pathname,documentHash});
 }

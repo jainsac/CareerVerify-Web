@@ -4,7 +4,7 @@ import { hashPassword, signSession, sessionCookie } from "../../../../lib/auth";
 import { generateUniqueCareerId } from "../../../../lib/career-id";
 
 const phonePattern = /^\d{10}$/;
-const passwordPattern = /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
+const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
 export async function POST(req: Request) {
   try {
@@ -19,7 +19,9 @@ export async function POST(req: Request) {
     if (!email.includes("@")) return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     if (!phonePattern.test(phone)) return NextResponse.json({ error: "Please enter a valid 10-digit phone number." }, { status: 400 });
     if (password.length < 8) return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
+    if (!/[a-z]/.test(password)) return NextResponse.json({ error: "Password must contain at least one lowercase letter." }, { status: 400 });
     if (!/[A-Z]/.test(password)) return NextResponse.json({ error: "Password must contain at least one uppercase letter." }, { status: 400 });
+    if (!/\d/.test(password)) return NextResponse.json({ error: "Password must contain at least one number." }, { status: 400 });
     if (!/[^A-Za-z0-9]/.test(password)) return NextResponse.json({ error: "Password must contain at least one special character." }, { status: 400 });
 
     const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] }, select: { email: true, phone: true } });

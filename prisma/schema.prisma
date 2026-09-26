@@ -163,6 +163,11 @@ model EmploymentRecord {
   resignationReason String?
   resignationNoticeDate DateTime?
   resignationWithdrawnAt DateTime?
+  exitRecordedAt DateTime?
+  exitReason String?
+  exitRevokedAt DateTime?
+  exitRevokedByUserId String?
+  exitRevokeReason String?
   status EmploymentStatus @default(ACTIVE)
   source String @default("MANUAL")
   externalEmployeeId String?

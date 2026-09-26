@@ -88,6 +88,7 @@ model ExperienceLetter {
   employmentRecordId String @unique
   documentRef String?
   documentHash String?
+  verificationTokenHash String? @unique
   issuedAt DateTime @default(now())
   revokedAt DateTime?
   employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)

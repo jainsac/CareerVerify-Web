@@ -15,5 +15,7 @@ jobs:
       - run: npx prisma generate
       - run: npm run typecheck
       - run: npx prisma validate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/careerverify_ci
       - run: npm run lint
       - run: npm run build

@@ -17,8 +17,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "organizationId, designation and a valid joinedAt are required" }, { status: 400 });
   }
 
-  const organization = await prisma.organization.findUnique({ where: { id: organizationId }, select: { id: true } });
+  const organization = await prisma.organization.findUnique({ where: { id: organizationId }, select: { id: true, verifiedAt: true } });
   if (!organization) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+  if (!organization.verifiedAt) return NextResponse.json({ error: "Employment can only be associated with a platform-verified organization" }, { status: 403 });
 
   const leftAt = body.leftAt ? new Date(body.leftAt) : undefined;
   if (leftAt && Number.isNaN(leftAt.getTime())) {

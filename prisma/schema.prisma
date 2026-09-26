@@ -169,6 +169,10 @@ model EmployeeInvite {
   organizationId String
   employmentRecordId String?
   email String
+  designation String?
+  department String?
+  employeeCode String?
+  joiningDate DateTime?
   tokenHash String @unique
   expiresAt DateTime
   acceptedAt DateTime?

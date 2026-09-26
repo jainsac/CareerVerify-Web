@@ -197,6 +197,41 @@ model SalaryStructure {
   @@index([organizationId, active])
 }
 
+model PayrollComplianceConfig {
+  id String @id @default(cuid())
+  organizationId String @unique
+  pfEnabled Boolean @default(false)
+  pfEmployeeRate Decimal @default(0) @db.Decimal(8,4)
+  pfEmployerRate Decimal @default(0) @db.Decimal(8,4)
+  esiEnabled Boolean @default(false)
+  esiEmployeeRate Decimal @default(0) @db.Decimal(8,4)
+  esiEmployerRate Decimal @default(0) @db.Decimal(8,4)
+  professionalTaxEnabled Boolean @default(false)
+  professionalTaxFixed Decimal @default(0) @db.Decimal(14,2)
+  tdsEnabled Boolean @default(false)
+  tdsFixed Decimal @default(0) @db.Decimal(14,2)
+  updatedAt DateTime @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Payslip {
+  id String @id @default(cuid())
+  payrollEntryId String @unique
+  basic Decimal @db.Decimal(14,2)
+  hra Decimal @default(0) @db.Decimal(14,2)
+  allowances Decimal @default(0) @db.Decimal(14,2)
+  gross Decimal @db.Decimal(14,2)
+  pfEmployee Decimal @default(0) @db.Decimal(14,2)
+  esiEmployee Decimal @default(0) @db.Decimal(14,2)
+  professionalTax Decimal @default(0) @db.Decimal(14,2)
+  tds Decimal @default(0) @db.Decimal(14,2)
+  otherDeductions Decimal @default(0) @db.Decimal(14,2)
+  totalDeductions Decimal @db.Decimal(14,2)
+  netPay Decimal @db.Decimal(14,2)
+  payrollEntry PayrollEntry @relation(fields: [payrollEntryId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
 model PayrollRun {
   id String @id @default(cuid())
   organizationId String
@@ -220,6 +255,7 @@ model PayrollEntry {
   deductions Decimal @default(0) @db.Decimal(14,2)
   net Decimal @db.Decimal(14,2)
   status String @default("CALCULATED")
+  payslip Payslip?
   payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
   employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
   @@unique([payrollRunId, employmentRecordId])

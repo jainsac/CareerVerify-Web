@@ -87,6 +87,7 @@ model ExperienceLetter {
   id String @id @default(cuid())
   employmentRecordId String @unique
   documentRef String?
+  storagePath String?
   documentHash String?
   verificationTokenHash String? @unique
   issuedAt DateTime @default(now())

@@ -13,4 +13,5 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npx prisma generate
+      - run: npx prisma validate
       - run: npm run build

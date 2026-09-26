@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
-import { currentUser } from "../../../../../lib/auth";
-import { prisma } from "../../../../../lib/prisma";
+import { currentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 async function access(userId:string, organizationId:string){return prisma.organizationMember.findFirst({where:{userId,organizationId}})}
 

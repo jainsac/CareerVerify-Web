@@ -63,6 +63,9 @@ export async function POST(req: Request) {
     data: { status, respondedAt: new Date() },
   });
 
+  const requesterMembers = await prisma.organizationMember.findMany({ where: { organizationId: request.requestingOrgId }, select: { userId: true } });
+  if (requesterMembers.length) await prisma.notification.createMany({ data: requesterMembers.map(m => ({ userId: m.userId, type: "VERIFICATION_RESULT", title: approved ? "Employment verification completed" : "Employment verification rejected", message: approved ? "The prior employer has verified the requested employment record." : "The prior employer did not verify the requested employment record." })) });
+
   await prisma.auditEvent.create({
     data: {
       actorUserId: user.id,

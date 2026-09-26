@@ -33,6 +33,7 @@ model User {
   organizationMemberships OrganizationMember[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  notifications Notification[]
 }
 model CareerProfile {
   id String @id @default(cuid())
@@ -140,6 +141,17 @@ model PublicVerificationToken {
   revokedAt DateTime?
   createdAt DateTime @default(now())
   careerProfile CareerProfile @relation(fields: [careerProfileId], references: [id], onDelete: Cascade)
+}
+model Notification {
+  id String @id @default(cuid())
+  userId String
+  type String
+  title String
+  message String
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
 }
 model AuditEvent {
   id String @id @default(cuid())

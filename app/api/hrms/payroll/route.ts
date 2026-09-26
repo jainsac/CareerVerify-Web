@@ -29,11 +29,11 @@ export async function POST(req:Request){
   const start=new Date(String(b.periodStart||"")),end=new Date(String(b.periodEnd||""));
   if(Number.isNaN(start.getTime())||Number.isNaN(end.getTime())||end<start)return NextResponse.json({error:"Valid payroll period is required."},{status:400});
   const existing=await prisma.payrollRun.findUnique({where:{organizationId_periodStart_periodEnd:{organizationId,periodStart:start,periodEnd:end}}});if(existing)return NextResponse.json({error:"Payroll run already exists for this period."},{status:409});
-  const employees=await prisma.employmentRecord.findMany({where:{organizationId,status:"ACTIVE"},include:{salaryStructure:true}});
+  const [employees,compliance]=await Promise.all([prisma.employmentRecord.findMany({where:{organizationId,status:"ACTIVE"},include:{salaryStructure:true}}),prisma.payrollComplianceConfig.findUnique({where:{organizationId}})]);
   const eligible=employees.filter(e=>e.salaryStructure);
   const run=await prisma.$transaction(async tx=>{
     const r=await tx.payrollRun.create({data:{organizationId,periodStart:start,periodEnd:end,status:"CALCULATED",createdByUserId:user.id,processedAt:new Date()}});
-    for(const e of eligible){const s=e.salaryStructure!;const gross=Number(s.basic)+Number(s.hra)+Number(s.allowances);const net=gross-Number(s.deductions);await tx.payrollEntry.create({data:{payrollRunId:r.id,employmentRecordId:e.id,gross,deductions:Number(s.deductions),net}})}
+    for(const e of eligible){const s=e.salaryStructure!;const basic=Number(s.basic),hra=Number(s.hra),allowances=Number(s.allowances),gross=basic+hra+allowances;const pf=compliance?.pfEnabled?gross*Number(compliance.pfEmployeeRate)/100:0;const esi=compliance?.esiEnabled?gross*Number(compliance.esiEmployeeRate)/100:0;const pt=compliance?.professionalTaxEnabled?Number(compliance.professionalTaxFixed):0;const tds=compliance?.tdsEnabled?Number(compliance.tdsFixed):0;const other=Number(s.deductions);const deductions=pf+esi+pt+tds+other;const net=gross-deductions;const entry=await tx.payrollEntry.create({data:{payrollRunId:r.id,employmentRecordId:e.id,gross,deductions,net}});await tx.payslip.create({data:{payrollEntryId:entry.id,basic,hra,allowances,gross,pfEmployee:pf,esiEmployee:esi,professionalTax:pt,tds,otherDeductions:other,totalDeductions:deductions,netPay:net}})}
     return r;
   },{timeout:120000});
   return NextResponse.json(run,{status:201});

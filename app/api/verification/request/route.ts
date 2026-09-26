@@ -61,6 +61,8 @@ export async function POST(req: Request) {
     },
   });
 
+  await prisma.notification.create({ data: { userId: profile.userId, type: "VERIFICATION_REQUEST", title: "New verification request", message: "A new employer has requested employment verification for your Career ID." } });
+
   await prisma.auditEvent.create({
     data: {
       actorUserId: user.id,

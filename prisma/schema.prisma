@@ -180,6 +180,51 @@ model EmploymentRecord {
   @@index([organizationId, externalEmployeeId])
 }
 
+model SalaryStructure {
+  id String @id @default(cuid())
+  organizationId String
+  employmentRecordId String @unique
+  basic Decimal @db.Decimal(14,2)
+  hra Decimal @default(0) @db.Decimal(14,2)
+  allowances Decimal @default(0) @db.Decimal(14,2)
+  deductions Decimal @default(0) @db.Decimal(14,2)
+  effectiveFrom DateTime
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+  @@index([organizationId, active])
+}
+
+model PayrollRun {
+  id String @id @default(cuid())
+  organizationId String
+  periodStart DateTime
+  periodEnd DateTime
+  status String @default("DRAFT")
+  processedAt DateTime?
+  createdByUserId String
+  createdAt DateTime @default(now())
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  entries PayrollEntry[]
+  @@unique([organizationId, periodStart, periodEnd])
+  @@index([organizationId, status])
+}
+
+model PayrollEntry {
+  id String @id @default(cuid())
+  payrollRunId String
+  employmentRecordId String
+  gross Decimal @db.Decimal(14,2)
+  deductions Decimal @default(0) @db.Decimal(14,2)
+  net Decimal @db.Decimal(14,2)
+  status String @default("CALCULATED")
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+  @@unique([payrollRunId, employmentRecordId])
+}
+
 model CompanyEmployeeAccount {
   id String @id @default(cuid())
   organizationId String

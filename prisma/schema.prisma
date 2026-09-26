@@ -75,6 +75,7 @@ model Organization {
   employments EmploymentRecord[]
   branding OrganizationBranding?
   integrationKeys IntegrationApiKey[]
+  webhooks IntegrationWebhook[]
   employeeAccounts CompanyEmployeeAccount[]
   employeeInvites EmployeeInvite[]
   createdAt DateTime @default(now())
@@ -102,6 +103,19 @@ model IntegrationApiKey {
   createdAt DateTime @default(now())
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   @@index([organizationId, revokedAt])
+}
+
+model IntegrationWebhook {
+  id String @id @default(cuid())
+  organizationId String
+  url String
+  secretHash String
+  events String
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId, active])
 }
 
 model OrganizationMember {

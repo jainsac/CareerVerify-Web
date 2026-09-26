@@ -178,7 +178,7 @@ model EmployeeInvite {
   acceptedAt DateTime?
   createdAt DateTime @default(now())
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+  employmentRecord EmploymentRecord? @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
   @@index([organizationId, expiresAt])
 }
 

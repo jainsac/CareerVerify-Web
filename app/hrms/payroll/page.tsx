@@ -1,0 +1,25 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+export default function Payroll(){
+ const[orgs,setOrgs]=useState<any[]>([]),[orgId,setOrgId]=useState(""),[employees,setEmployees]=useState<any[]>([]),[structures,setStructures]=useState<any[]>([]),[runs,setRuns]=useState<any[]>([]);
+ const[employeeId,setEmployeeId]=useState(""),[basic,setBasic]=useState(""),[hra,setHra]=useState("0"),[allowances,setAllowances]=useState("0"),[deductions,setDeductions]=useState("0"),[effectiveFrom,setEffectiveFrom]=useState(""),[periodStart,setPeriodStart]=useState(""),[periodEnd,setPeriodEnd]=useState(""),[message,setMessage]=useState("");
+
+ async function load(id=orgId){if(!id)return;const[e,p]=await Promise.all([fetch("/api/hrms/employees/list?organizationId="+encodeURIComponent(id)),fetch("/api/hrms/payroll?organizationId="+encodeURIComponent(id))]);if(e.ok)setEmployees(await e.json());if(p.ok){const d=await p.json();setStructures(d.structures||[]);setRuns(d.runs||[])}}
+ useEffect(()=>{fetch("/api/me").then(r=>r.json()).then(d=>{const list=d.organizations||[];setOrgs(list);if(list[0]){setOrgId(list[0].id);load(list[0].id)}})},[]);
+ useEffect(()=>{if(orgId)load()},[orgId]);
+
+ async function saveSalary(){const r=await fetch("/api/hrms/payroll",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({organizationId:orgId,action:"SALARY",employmentRecordId:employeeId,basic:Number(basic),hra:Number(hra),allowances:Number(allowances),deductions:Number(deductions),effectiveFrom})});const d=await r.json();setMessage(r.ok?"Salary structure saved.":d.error||"Unable to save.");if(r.ok)load()}
+ async function runPayroll(){const r=await fetch("/api/hrms/payroll",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({organizationId:orgId,action:"RUN",periodStart,periodEnd})});const d=await r.json();setMessage(r.ok?"Payroll calculated.":d.error||"Unable to calculate payroll.");if(r.ok)load()}
+ async function finalize(id:string){const r=await fetch("/api/hrms/payroll",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({organizationId:orgId,id,status:"FINALIZED"})});setMessage(r.ok?"Payroll finalized.":"Unable to finalize payroll.");if(r.ok)load()}
+
+ return <div className="wrap"><nav className="nav"><Link className="brand" href="/hrms">Career<span>Verify</span></Link><Link className="btn alt" href="/hrms/employees">Employees</Link></nav>
+ <div className="card"><div className="pill">PAYROLL</div><h1>Payroll foundation</h1><p className="muted">Salary structures and payroll runs are managed here. Statutory tax/PF/ESI calculations are intentionally kept as a separate compliance layer.</p>{orgs.length>1&&<div className="field"><label>Company</label><select value={orgId} onChange={e=>setOrgId(e.target.value)}>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></div>}
+ <h2>Salary structure</h2><div className="grid"><select value={employeeId} onChange={e=>setEmployeeId(e.target.value)}><option value="">Employee</option>{employees.map(e=><option key={e.id} value={e.id}>{e.careerProfile.user.name}</option>)}</select><input type="number" placeholder="Basic" value={basic} onChange={e=>setBasic(e.target.value)}/><input type="number" placeholder="HRA" value={hra} onChange={e=>setHra(e.target.value)}/><input type="number" placeholder="Allowances" value={allowances} onChange={e=>setAllowances(e.target.value)}/><input type="number" placeholder="Deductions" value={deductions} onChange={e=>setDeductions(e.target.value)}/><input type="date" value={effectiveFrom} onChange={e=>setEffectiveFrom(e.target.value)}/></div><button className="btn" onClick={saveSalary} disabled={!employeeId||!basic||!effectiveFrom}>Save salary</button>
+ <h2>Payroll run</h2><div className="grid"><input type="date" value={periodStart} onChange={e=>setPeriodStart(e.target.value)}/><input type="date" value={periodEnd} onChange={e=>setPeriodEnd(e.target.value)}/></div><button className="btn" onClick={runPayroll} disabled={!periodStart||!periodEnd}>Calculate payroll</button>{message&&<p className="notice">{message}</p>}</div>
+ <section className="section"><div className="grid">{runs.map(r=><div className="card" key={r.id}><div className="pill">{r.status}</div><h3>{new Date(r.periodStart).toLocaleDateString()} – {new Date(r.periodEnd).toLocaleDateString()}</h3><p>{r.entries?.length||0} employee payroll entries</p>{r.status!=="FINALIZED"&&<button className="btn" onClick={()=>finalize(r.id)}>Finalize</button>}</div>)}</div></section>
+ <section className="section"><div className="card"><h2>Salary structures</h2>{structures.map(s=><p key={s.id}>{s.employmentRecord.careerProfile.user.name} • Basic ₹{Number(s.basic).toLocaleString()} • Gross ₹{(Number(s.basic)+Number(s.hra)+Number(s.allowances)).toLocaleString()}</p>)}</div></section>
+ </div>
+}

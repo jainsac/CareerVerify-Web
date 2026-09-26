@@ -79,6 +79,9 @@ model Organization {
   importBatches HRMSImportBatch[]
   employeeAccounts CompanyEmployeeAccount[]
   employeeInvites EmployeeInvite[]
+  salaryStructures SalaryStructure[]
+  payrollCompliance PayrollComplianceConfig?
+  payrollRuns PayrollRun[]
   createdAt DateTime @default(now())
 }
 
@@ -172,6 +175,8 @@ model EmploymentRecord {
   employeeInvites EmployeeInvite[]
   exitHistory EmploymentExitEvent[]
   resignationHistory EmploymentResignationEvent[]
+  salaryStructure SalaryStructure?
+  payrollEntries PayrollEntry[]
   careerProfile CareerProfile @relation(fields: [careerProfileId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

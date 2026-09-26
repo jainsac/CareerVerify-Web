@@ -27,6 +27,8 @@ export async function POST(req: Request) {
     data: { status: "DISPUTED", remarks: reason },
   });
 
+  await prisma.notification.create({ data: { userId: user.id, type: "DISPUTE_CREATED", title: "Dispute submitted", message: "Your employment record dispute has been submitted for admin review." } });
+
   await prisma.auditEvent.create({
     data: {
       actorUserId: user.id,

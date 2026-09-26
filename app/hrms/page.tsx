@@ -40,7 +40,7 @@ export default function HRMS() {
     ["Leave", "Leave policies, requests and approvals.", "#"],
     ["Payroll", "Salary structure and payroll module foundation.", "#"],
     ["Documents", "Company documents, employee documents and experience letters.", "#"],
-    ["Integrations", "Connect APIs, HRMS systems, imports and webhooks.", "#"],
+    ["Integrations", "Connect APIs, HRMS systems, imports and webhooks.", "/hrms/integrations"],
   ];
 
   return <div className="wrap">
@@ -48,7 +48,7 @@ export default function HRMS() {
       <Link className="brand" href="/employer">Career<span>Verify</span></Link>
       <Link className="btn alt" href="/candidate">Career Profile</Link>
       <Link className="btn alt" href="/verify">Verification</Link>
-      <Link className="btn alt" href="/hrms/employees">Employees</Link>
+      <Link className="btn alt" href="/hrms/employees">Employees</Link><Link className="btn alt" href="/hrms/integrations">Integrations</Link>
     </nav>
     <div className="card">
       <div className="pill">COMPANY HRMS</div>

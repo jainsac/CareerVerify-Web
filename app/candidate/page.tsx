@@ -3,7 +3,20 @@ import Link from "next/link";
 import {useEffect,useState} from "react";
 type Emp={id:string;designation:string;department?:string;joinedAt:string;leftAt?:string;status:string;organization:{name:string}};
 type Verification={id:string;status:string;expiresAt:string;consentedAt?:string|null;requestingOrganization:string;priorOrganization:string;response?:{verified:boolean}|null};
-function Letter({id,onDone}:{id:string;onDone:()=>void}){const [ref,setRef]=useState(""),[storage,setStorage]=useState(""),[msg,setMsg]=useState("");async function save(){const r=await fetch("/api/experience-letter",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({employmentRecordId:id,documentRef:ref,storagePath:storage})});const d=await r.json();setMsg(r.ok?"Experience letter registered.":d.error||"Unable to register.");if(r.ok){setRef("");onDone()}}return <div><input placeholder="Document reference / secure storage reference" value={ref} onChange={e=>setRef(e.target.value)}/><input placeholder="Private storage path / object key (optional)" value={storage} onChange={e=>setStorage(e.target.value)}/><button className="btn alt" onClick={save} disabled={!ref}>Register letter</button>{msg&&<span className="muted"> {msg}</span>}</div>}\nexport default function Candidate(){
+function Letter({id,onDone}:{id:string;onDone:()=>void}) {
+ const [file,setFile]=useState<File|null>(null),[msg,setMsg]=useState("");
+ async function save(){
+  if(!file)return;
+  setMsg("Uploading…");
+  const form=new FormData(); form.append("employmentRecordId",id); form.append("file",file);
+  const r=await fetch("/api/experience-letter/upload",{method:"POST",body:form});
+  const d=await r.json();
+  setMsg(r.ok?"Experience letter uploaded and registered.":d.error||"Upload failed.");
+  if(r.ok)onDone();
+ }
+ return <div><input type="file" accept="application/pdf" onChange={e=>setFile(e.target.files?.[0]||null)}/><button className="btn alt" onClick={save} disabled={!file}>Upload & register</button>{msg&&<p className="muted">{msg}</p>}</div>
+}
+export default function Candidate(){
  const [careerId,setCareerId]=useState(""),[rows,setRows]=useState<Emp[]>([]),[requests,setRequests]=useState<Verification[]>([]),[loading,setLoading]=useState(true),[message,setMessage]=useState("");
  const loadRequests=()=>fetch("/api/verification/requests").then(r=>r.ok?r.json():[]).then(setRequests);
  useEffect(()=>{fetch("/api/me").then(r=>r.json()).then(d=>setCareerId(d.careerProfile?.careerId||""));fetch("/api/employment").then(r=>r.ok?r.json():[]).then(setRows).finally(()=>setLoading(false));loadRequests()},[]);

@@ -9,14 +9,14 @@ type Me = { organizations?: Org[] };
 export default function HRMS() {
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [orgId, setOrgId] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState("");\n  const [logoUrl, setLogoUrl] = useState("");\n  const [primaryColor, setPrimaryColor] = useState("#17324d");\n  const [secondaryColor, setSecondaryColor] = useState("#ffffff");\n  const [tagline, setTagline] = useState("");
 
   useEffect(() => {
     fetch("/api/me").then(r => r.json()).then((d: Me) => {
       setOrgs(d.organizations || []);
       if (d.organizations?.[0]) setOrgId(d.organizations[0].id);
     });
-  }, []);
+  }, []);\n\n  async function saveBranding() {\n    if (!orgId) return;\n    const r = await fetch("/api/hrms/branding", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ organizationId: orgId, logoUrl, primaryColor, secondaryColor, tagline }) });\n    const d = await r.json();\n    setMessage(r.ok ? "Company branding saved." : d.error || "Unable to save branding.");\n  }
 
   const cards = [
     ["Employees", "Employee master, onboarding, transfers and exits."],

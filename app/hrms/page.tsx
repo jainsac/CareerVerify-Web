@@ -40,7 +40,8 @@ export default function HRMS() {
     ["Leave", "Leave policies, requests and approvals.", "#"],
     ["Payroll", "Salary structure and payroll module foundation.", "#"],
     ["Documents", "Company documents, employee documents and experience letters.", "#"],
-    ["Integrations", "Connect APIs, HRMS systems, imports and webhooks.", "/hrms/integrations"],
+    ["Integrations", "Connect APIs, HRMS systems, imports and webhooks.", "/hrms/integrations"]
+    ,["Import / Migration", "Upload, validate and migrate employee records from CSV.", "/hrms/import"],
   ];
 
   return <div className="wrap">

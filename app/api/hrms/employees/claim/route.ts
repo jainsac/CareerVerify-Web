@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import { currentUser, hashPassword } from "../../../../../lib/auth";
-import { prisma } from "../../../../../lib/prisma";
+import { currentUser, hashPassword } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 

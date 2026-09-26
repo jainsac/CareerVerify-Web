@@ -38,7 +38,7 @@ export default function HRMS() {
     ["Resignations", "Review, accept or reject employee resignation requests.", "/hrms/resignations"],
     ["Attendance", "Attendance records and daily employee status.", "/hrms/attendance"],
     ["Leave", "Leave policies, requests and approvals.", "/hrms/leave"],
-    ["Payroll", "Salary structure and payroll module foundation.", "#"],
+    ["Payroll", "Salary structures and payroll runs.", "/hrms/payroll"],
     ["Documents", "Company documents, employee documents and experience letters.", "#"],
     ["Integrations", "Connect APIs, HRMS systems, imports and webhooks.", "/hrms/integrations"]
     ,["Import / Migration", "Upload, validate and migrate employee records from CSV.", "/hrms/import"],

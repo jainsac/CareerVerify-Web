@@ -47,36 +47,45 @@ export async function POST(req: Request) {
     }, { status: 409 });
   }
 
-  const careerId = existingUser?.careerProfile?.careerId ?? await generateCareerId();
+  const existingCareer = existingUser?.careerProfile ?? null;
+  const careerId = existingCareer?.careerId ?? await generateCareerId();
   const token = crypto.randomBytes(32).toString("hex");
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
-  const result = await prisma.$transaction(async tx => {
-    const profile = existingUser?.careerProfile
-      ? existingUser.careerProfile
-      : await tx.careerProfile.create({
-          data: {
-            careerId,
-            user: {
-              create: {
-                email: companyEmail,
-                phone: phone || null,
-                name,
-                passwordHash: crypto.randomBytes(32).toString("hex"),
-                accountStatus: "INVITED",
-                invitedAt: new Date(),
-              },
-            },
-          },
-        });
+  if (existingCareer) {
+    const invite = await prisma.employeeInvite.create({
+      data: {
+        organizationId,
+        employmentRecordId: null,
+        email: companyEmail,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+    return NextResponse.json({
+      status: "CLAIM_PENDING",
+      careerId: existingCareer.careerId,
+      inviteToken: token,
+      message: "An existing CareerVerify identity was found. No employment record was linked automatically. The employee must accept this invitation while signed in to their CareerVerify account.",
+    }, { status: 201 });
+  }
 
-    if (existingUser?.careerProfile) {
-      const duplicateEmployment = await tx.employmentRecord.findFirst({
-        where: { careerProfileId: profile.id, organizationId, status: { in: ["ACTIVE", "DISPUTED"] } },
-        select: { id: true },
-      });
-      if (duplicateEmployment) throw new Error("DUPLICATE_EMPLOYMENT");
-    }
+  const result = await prisma.$transaction(async tx => {
+    const profile = await tx.careerProfile.create({
+      data: {
+        careerId,
+        user: {
+          create: {
+            email: companyEmail,
+            phone: phone || null,
+            name,
+            passwordHash: crypto.randomBytes(32).toString("hex"),
+            accountStatus: "INVITED",
+            invitedAt: new Date(),
+          },
+        },
+      },
+    });
 
     const employment = await tx.employmentRecord.create({
       data: {
@@ -111,13 +120,8 @@ export async function POST(req: Request) {
       },
     });
 
-    return { careerId: profile.careerId, employmentId: employment.id, inviteToken: token, existingAccount: Boolean(existingUser?.careerProfile) };
-  }).catch(error => {
-    if (error instanceof Error && error.message === "DUPLICATE_EMPLOYMENT") return null;
-    throw error;
+    return { careerId: profile.careerId, employmentId: employment.id, inviteToken: token };
   });
-
-  if (!result) return NextResponse.json({ error: "This employee already has an active employment record with your organization." }, { status: 409 });
 
   return NextResponse.json({
     status: result.existingAccount ? "CLAIM_PENDING" : "INVITED",

@@ -128,12 +128,10 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({
-    status: result.existingAccount ? "CLAIM_PENDING" : "INVITED",
+    status: "INVITED",
     careerId: result.careerId,
     employmentId: result.employmentId,
     inviteToken: result.inviteToken,
-    message: result.existingAccount
-      ? "Existing CareerVerify identity found. The employee must accept this invitation while signed in to their CareerVerify account. No existing password was changed."
-      : "Employee provisioned. Send the invitation through your configured email/SMS provider; never send a password.",
+    message: "Employee provisioned. Send the invitation through your configured email/SMS provider; never send a password.",
   }, { status: 201 });
 }

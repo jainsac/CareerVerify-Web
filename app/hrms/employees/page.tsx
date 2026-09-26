@@ -1,0 +1,23 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+type Org={id:string;name:string};
+type Employee={id:string;employeeCode?:string|null;designation:string;department?:string|null;status:string;joinedAt:string;leftAt?:string|null;careerProfile:{careerId:string}};
+
+export default function Employees(){
+ const [orgs,setOrgs]=useState<Org[]>([]); const [orgId,setOrgId]=useState(""); const [rows,setRows]=useState<Employee[]>([]); const [msg,setMsg]=useState("");
+ const [name,setName]=useState(""); const [email,setEmail]=useState(""); const [designation,setDesignation]=useState(""); const [department,setDepartment]=useState(""); const [employeeCode,setEmployeeCode]=useState(""); const [joiningDate,setJoiningDate]=useState("");
+ async function load(){ if(!orgId)return; const r=await fetch("/api/employment"); if(r.ok)setRows(await r.json()); }
+ useEffect(()=>{fetch("/api/me").then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);if(d.organizations?.[0])setOrgId(d.organizations[0].id);});},[]);
+ useEffect(()=>{load()},[orgId]);
+ async function add(){const r=await fetch("/api/hrms/employees",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({organizationId:orgId,name,companyEmail:email,designation,department,employeeCode,joiningDate})});const d=await r.json();setMsg(r.ok:"Employee invited. Career ID: "+d.careerId:d.error||"Unable to create employee");if(r.ok){setName("");setEmail("");setDesignation("");setDepartment("");setEmployeeCode("");setJoiningDate("");load();}}
+ async function exit(id:string){const reason=window.prompt("Exit reason");if(!reason)return;const r=await fetch("/api/hrms/employees/exit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({employmentId:id,reason})});const d=await r.json();setMsg(r.ok?"Employee exit recorded.":d.error||"Unable to record exit");if(r.ok)load();}
+ async function revoke(id:string){const reason=window.prompt("Why are you revoking this exit?");if(!reason)return;const r=await fetch("/api/hrms/employees/exit",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({employmentId:id,reason})});const d=await r.json();setMsg(r.ok?"Exit revoked. Employment is active again.":d.error||"Unable to revoke exit");if(r.ok)load();}
+ return <div className="wrap"><nav className="nav"><Link className="brand" href="/hrms">Career<span>Verify</span></Link><Link className="btn alt" href="/hrms">HRMS</Link><Link className="btn alt" href="/employer">Verification</Link></nav>
+ <div className="card"><div className="pill">EMPLOYEE MASTER</div><h1>Employees</h1>{orgs.length>0&&<div className="field"><label>Company</label><select value={orgId} onChange={e=>setOrgId(e.target.value)}>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></div>}{msg&&<p className="notice">{msg}</p>}</div>
+ <section className="section"><div className="card"><h2>Add employee</h2><div className="grid"><div className="field"><label>Full name</label><input value={name} onChange={e=>setName(e.target.value)}/></div><div className="field"><label>Company email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)}/></div><div className="field"><label>Employee ID</label><input value={employeeCode} onChange={e=>setEmployeeCode(e.target.value)}/></div><div className="field"><label>Designation</label><input value={designation} onChange={e=>setDesignation(e.target.value)}/></div><div className="field"><label>Department</label><input value={department} onChange={e=>setDepartment(e.target.value)}/></div><div className="field"><label>Joining date</label><input type="date" value={joiningDate} onChange={e=>setJoiningDate(e.target.value)}/></div></div><button className="btn" onClick={add} disabled={!orgId||!name||!email||!designation||!joiningDate}>Create & invite</button></div></section>
+ <section className="section"><h2>Employee records</h2>{rows.length?<div className="grid">{rows.map(x=><div className="card" key={x.id}><div className="pill">{x.status}</div><h3>{x.employeeCode||"Employee"}</h3><p>Career ID: <strong>{x.careerProfile?.careerId||"—"}</strong></p><p>{x.designation}{x.department?" • "+x.department:""}</p><p className="muted">{new Date(x.joinedAt).toLocaleDateString()} – {x.leftAt?new Date(x.leftAt).toLocaleDateString():"Present"}</p>{x.status==="ACTIVE"?<button className="btn alt" onClick={()=>exit(x.id)}>Record exit</button>:x.status==="LEFT"?<button className="btn" onClick={()=>revoke(x.id)}>Revoke exit</button>:null}</div>)}</div>:<div className="card"><p className="muted">No employee records yet.</p></div>}</section>
+ </div>
+}

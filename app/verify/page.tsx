@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 export default function Verify(){
   const [loggedIn,setLoggedIn]=useState(false);
-  useEffect(()=>{fetch("/api/me").then(r=>setLoggedIn(r.ok)).catch(()=>setLoggedIn(false));},[]);
+  useEffect(()=>{fetch("/api/me").then(async r=>{if(!r.ok){setLoggedIn(false);return;} const d=await r.json(); if(d.role==="EMPLOYEE" && (!d.organizations || d.organizations.length===0)){window.location.href="/candidate";return;} setLoggedIn(true);}).catch(()=>setLoggedIn(false));},[]);
   return <div className="wrap">
     <nav className="nav">
       <Link className="brand" href={loggedIn ? "/candidate" : "/"}>Career<span>Verify</span></Link>

@@ -4,7 +4,34 @@ import { useEffect, useState } from "react";
 
 export default function Verify(){
   const [loggedIn,setLoggedIn]=useState(false);
-  useEffect(()=>{fetch("/api/me").then(async r=>{if(!r.ok){setLoggedIn(false);return;} const d=await r.json(); if(d.role!=="EMPLOYER" && d.role!=="ADMIN"){window.location.href="/candidate";return;} setLoggedIn(true);}).catch(()=>setLoggedIn(false));},[]);
+  const [checking,setChecking]=useState(true);
+
+  useEffect(()=>{
+    fetch("/api/me")
+      .then(async r=>{
+        if(!r.ok){
+          setLoggedIn(false);
+          setChecking(false);
+          return;
+        }
+        const d=await r.json();
+        if(d.role!=="EMPLOYER" && d.role!=="ADMIN"){
+          window.location.replace("/candidate");
+          return;
+        }
+        setLoggedIn(true);
+        setChecking(false);
+      })
+      .catch(()=>{
+        setLoggedIn(false);
+        setChecking(false);
+      });
+  },[]);
+
+  if(checking){
+    return <div className="wrap"><div className="form card"><p className="muted">Loading…</p></div></div>;
+  }
+
   return <div className="wrap">
     <nav className="nav">
       <Link className="brand" href={loggedIn ? "/candidate" : "/"}>Career<span>Verify</span></Link>

@@ -2,12 +2,16 @@
 import Link from "next/link";
 import { useState } from "react";
 
-type Organization = { id: string; name: string; cin?: string | null; gstin?: string | null };
+type Organization = { id: string; name: string; cin?: string | null; gstin?: string | null; verifiedAt?: string | null };
 
 export default function AddExperiencePage() {
   const [query, setQuery] = useState("");
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizationId, setOrganizationId] = useState("");
+  const [newCompany, setNewCompany] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [newCompanyCin, setNewCompanyCin] = useState("");
+  const [newCompanyGstin, setNewCompanyGstin] = useState("");
   const [designation, setDesignation] = useState("");
   const [department, setDepartment] = useState("");
   const [employeeCode, setEmployeeCode] = useState("");
@@ -21,6 +25,7 @@ export default function AddExperiencePage() {
   async function searchOrganizations() {
     setMessage("");
     setOrganizationId("");
+    setNewCompany(false);
     if (query.trim().length < 2) {
       setMessage("Enter at least 2 characters of the employer name, CIN or GSTIN.");
       return;
@@ -32,7 +37,40 @@ export default function AddExperiencePage() {
       return;
     }
     setOrganizations(d);
-    if (!d.length) setMessage("No platform-verified employer found. The employer must be registered and verified on CareerVerify first.");
+    if (!d.length) {
+      setMessage("No listed employer found. You can add this company as a new employer below.");
+    }
+  }
+
+  async function addNewCompany() {
+    setMessage("");
+    if (newCompanyName.trim().length < 2) {
+      setMessage("Enter the previous company name.");
+      return;
+    }
+    setBusy(true);
+    const r = await fetch("/api/organization/self-add", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: newCompanyName.trim(),
+        cin: newCompanyCin.trim(),
+        gstin: newCompanyGstin.trim(),
+      }),
+    });
+    const d = await r.json();
+    setBusy(false);
+    if (!r.ok) {
+      setMessage(d.error || "Unable to add company.");
+      return;
+    }
+    setOrganizationId(d.organization.id);
+    setNewCompany(false);
+    setMessage(
+      d.organization.verifiedAt
+        ? "Company added. You can continue with this verified employer."
+        : "Company added as an unverified employer. Your experience will remain self-added until the employer/platform verifies it."
+    );
   }
 
   async function submit(e: React.FormEvent) {
@@ -40,7 +78,7 @@ export default function AddExperiencePage() {
     setMessage("");
 
     if (!organizationId || !designation || !joinedAt || !leftAt) {
-      setMessage("Employer, designation, joining date and leaving date are required.");
+      setMessage("Select an employer, designation, joining date and leaving date.");
       return;
     }
 
@@ -57,6 +95,7 @@ export default function AddExperiencePage() {
         joinedAt,
         leftAt,
         remarks,
+        source: "SELF",
       }),
     });
     const d = await r.json();
@@ -97,14 +136,35 @@ export default function AddExperiencePage() {
 
         {organizations.length > 0 && (
           <div className="field">
-            <label>Verified employer</label>
-            <select value={organizationId} onChange={e=>setOrganizationId(e.target.value)} required>
+            <label>Listed employers</label>
+            <select value={organizationId} onChange={e=>setOrganizationId(e.target.value)}>
               <option value="">Select employer</option>
               {organizations.map(o=>(
-                <option key={o.id} value={o.id}>{o.name}{o.cin ? " • CIN " + o.cin : ""}</option>
+                <option key={o.id} value={o.id}>{o.name}{o.verifiedAt ? " • Verified" : " • Unverified"}</option>
               ))}
             </select>
           </div>
+        )}
+
+        <div className="field">
+          <button className="btn alt" type="button" onClick={()=>{setNewCompany(v=>!v);setOrganizationId("");}}>
+            {newCompany ? "Use listed employer" : "Company not listed? Add new company"}
+          </button>
+        </div>
+
+        {newCompany && (
+          <div className="card" style={{marginBottom:12}}>
+            <h3>Add previous company</h3>
+            <p className="muted">You can add the company even if it has not registered on CareerVerify yet. The company will remain unverified until verified.</p>
+            <div className="field"><label>Company name</label><input value={newCompanyName} onChange={e=>setNewCompanyName(e.target.value)} placeholder="Previous company name" /></div>
+            <div className="field"><label>CIN (optional)</label><input value={newCompanyCin} onChange={e=>setNewCompanyCin(e.target.value)} /></div>
+            <div className="field"><label>GSTIN (optional)</label><input value={newCompanyGstin} onChange={e=>setNewCompanyGstin(e.target.value)} /></div>
+            <button className="btn" type="button" onClick={addNewCompany} disabled={busy}>Add company</button>
+          </div>
+        )}
+
+        {organizationId && !newCompany && (
+          <p className="notice">Employer selected. {organizations.find(o=>o.id===organizationId)?.verifiedAt ? "This employer is platform verified." : "This employer is currently unverified; your self-added experience will need verification."}</p>
         )}
 
         <div className="field"><label>Designation</label><input value={designation} onChange={e=>setDesignation(e.target.value)} required placeholder="e.g. Senior Executive" /></div>

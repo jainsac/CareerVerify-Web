@@ -121,10 +121,10 @@ export async function PUT(req: Request) {
       for (let i = 0; i < rows.length; i++) {
         const x = normalize(rows[i]);
         const duplicateConditions: Prisma.EmploymentRecordWhereInput[] = [
-          x.employeeCode ? { employeeCode: x.employeeCode } : undefined,
-          x.externalEmployeeId ? { externalEmployeeId: x.externalEmployeeId } : undefined,
           { careerProfile: { user: { email: x.companyEmail } } }
-        ].filter((condition): condition is Prisma.EmploymentRecordWhereInput => Boolean(condition));
+        ];
+        if (x.employeeCode) duplicateConditions.push({ employeeCode: x.employeeCode });
+        if (x.externalEmployeeId) duplicateConditions.push({ externalEmployeeId: x.externalEmployeeId });
 
         const duplicate = await tx.employmentRecord.findFirst({
           where: { organizationId, OR: duplicateConditions },

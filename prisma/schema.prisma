@@ -80,6 +80,8 @@ model Organization {
   employeeAccounts CompanyEmployeeAccount[]
   employeeInvites EmployeeInvite[]
   salaryStructures SalaryStructure[]
+  leavePolicies LeavePolicy[]
+  leaveRequests LeaveRequest[]
   payrollCompliance PayrollComplianceConfig?
   payrollRuns PayrollRun[]
   createdAt DateTime @default(now())
@@ -181,6 +183,7 @@ model EmploymentRecord {
   exitHistory EmploymentExitEvent[]
   resignationHistory EmploymentResignationEvent[]
   salaryStructure SalaryStructure?
+  leaveRequests LeaveRequest[]
   payrollEntries PayrollEntry[]
   careerProfile CareerProfile @relation(fields: [careerProfileId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -188,6 +191,43 @@ model EmploymentRecord {
   updatedAt DateTime @updatedAt
   @@index([organizationId, status])
   @@index([organizationId, externalEmployeeId])
+}
+
+model LeavePolicy {
+  id String @id @default(cuid())
+  organizationId String
+  name String
+  leaveType String
+  annualLimit Int
+  carryForward Boolean @default(false)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leaveRequests LeaveRequest[]
+  @@unique([organizationId, leaveType])
+  @@index([organizationId, active])
+}
+
+model LeaveRequest {
+  id String @id @default(cuid())
+  organizationId String
+  employmentRecordId String
+  policyId String
+  startDate DateTime
+  endDate DateTime
+  days Decimal @db.Decimal(8,2)
+  reason String?
+  status String @default("PENDING")
+  decidedByUserId String?
+  decisionNote String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+  policy LeavePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  @@index([organizationId, status])
+  @@index([employmentRecordId, startDate])
 }
 
 model SalaryStructure {

@@ -30,7 +30,7 @@ export default function ProfilePage() {
   return <div className="wrap">
     <nav className="nav">
       <Link className="brand" href="/candidate">Career<span>Verify</span></Link>
-      <div className="links"><Link className="btn alt" href="/candidate">Dashboard</Link><Link className="btn alt" href="/verify">Verification</Link></div>
+      <div className="links"><Link className="btn alt" href="/candidate">Dashboard</Link></div>
     </nav>
     <form className="form card" onSubmit={save}>
       <div className="pill">EMPLOYEE PROFILE</div>

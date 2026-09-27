@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { currentUser } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
-import { generateUniqueCareerId } from "../../../../lib/career-id";
+import { generateUniqueCareerId as createCareerId } from "../../../../lib/career-id";
 
 async function orgForUser(userId: string, organizationId: string) {
   return prisma.organizationMember.findFirst({ where: { userId, organizationId } });
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   }
 
   const existingCareer = existingUser?.careerProfile ?? null;
-  const careerId = existingCareer?.careerId ?? await generateCareerId();
+  const careerId = existingCareer?.careerId ?? await createCareerId();
   const token = crypto.randomBytes(32).toString("hex");
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 

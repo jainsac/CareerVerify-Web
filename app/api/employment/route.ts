@@ -12,9 +12,13 @@ export async function POST(req: Request) {
   const organizationId = String(body.organizationId ?? "").trim();
   const designation = String(body.designation ?? "").trim();
   const joinedAt = new Date(body.joinedAt ?? "");
+  const source = String(body.source ?? "SELF").trim().toUpperCase();
 
   if (!organizationId || !designation || Number.isNaN(joinedAt.getTime())) {
     return NextResponse.json({ error: "organizationId, designation and a valid joinedAt are required" }, { status: 400 });
+  }
+  if (source !== "SELF") {
+    return NextResponse.json({ error: "Employee-created experience records must use the self-added flow" }, { status: 400 });
   }
 
   const organization = await prisma.organization.findUnique({
@@ -22,9 +26,6 @@ export async function POST(req: Request) {
     select: { id: true, verifiedAt: true },
   });
   if (!organization) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
-  if (!organization.verifiedAt) {
-    return NextResponse.json({ error: "Employment can only be associated with a platform-verified organization" }, { status: 403 });
-  }
 
   const leftAt = body.leftAt ? new Date(body.leftAt) : undefined;
   if (leftAt && Number.isNaN(leftAt.getTime())) {
@@ -60,7 +61,6 @@ export async function POST(req: Request) {
       leftAt,
       status: leftAt ? "LEFT" : "ACTIVE",
       source: "SELF",
-      verifiedAt: undefined,
       experienceLetterRef: body.experienceLetterRef ? String(body.experienceLetterRef) : undefined,
       remarks: body.remarks ? String(body.remarks) : undefined,
     },
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       action: "EMPLOYMENT_RECORD_CREATED",
       entityType: "EmploymentRecord",
       entityId: row.id,
-      metadata: { organizationId, source: "SELF" },
+      metadata: { organizationId, source: "SELF", organizationVerified: Boolean(organization.verifiedAt) },
     },
   });
 

@@ -17,9 +17,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "organizationId, designation and a valid joinedAt are required" }, { status: 400 });
   }
 
-  const organization = await prisma.organization.findUnique({ where: { id: organizationId }, select: { id: true, verifiedAt: true } });
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { id: true, verifiedAt: true },
+  });
   if (!organization) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
-  if (!organization.verifiedAt) return NextResponse.json({ error: "Employment can only be associated with a platform-verified organization" }, { status: 403 });
+  if (!organization.verifiedAt) {
+    return NextResponse.json({ error: "Employment can only be associated with a platform-verified organization" }, { status: 403 });
+  }
 
   const leftAt = body.leftAt ? new Date(body.leftAt) : undefined;
   if (leftAt && Number.isNaN(leftAt.getTime())) {
@@ -27,6 +32,20 @@ export async function POST(req: Request) {
   }
   if (leftAt && leftAt < joinedAt) {
     return NextResponse.json({ error: "leftAt cannot be earlier than joinedAt" }, { status: 400 });
+  }
+
+  const duplicate = await prisma.employmentRecord.findFirst({
+    where: {
+      careerProfileId: user.careerProfile.id,
+      organizationId,
+      joinedAt,
+      leftAt: leftAt ?? null,
+      designation,
+    },
+    select: { id: true },
+  });
+  if (duplicate) {
+    return NextResponse.json({ error: "This employment record already exists in your Career Profile" }, { status: 409 });
   }
 
   const row = await prisma.employmentRecord.create({
@@ -40,6 +59,8 @@ export async function POST(req: Request) {
       joinedAt,
       leftAt,
       status: leftAt ? "LEFT" : "ACTIVE",
+      source: "SELF",
+      verifiedAt: undefined,
       experienceLetterRef: body.experienceLetterRef ? String(body.experienceLetterRef) : undefined,
       remarks: body.remarks ? String(body.remarks) : undefined,
     },
@@ -51,7 +72,7 @@ export async function POST(req: Request) {
       action: "EMPLOYMENT_RECORD_CREATED",
       entityType: "EmploymentRecord",
       entityId: row.id,
-      metadata: { organizationId },
+      metadata: { organizationId, source: "SELF" },
     },
   });
 

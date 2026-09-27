@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { currentUser } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
@@ -119,15 +120,14 @@ export async function PUT(req: Request) {
 
       for (let i = 0; i < rows.length; i++) {
         const x = normalize(rows[i]);
+        const duplicateConditions: Prisma.EmploymentRecordWhereInput[] = [
+          x.employeeCode ? { employeeCode: x.employeeCode } : undefined,
+          x.externalEmployeeId ? { externalEmployeeId: x.externalEmployeeId } : undefined,
+          { careerProfile: { user: { email: x.companyEmail } } }
+        ].filter((condition): condition is Prisma.EmploymentRecordWhereInput => Boolean(condition));
+
         const duplicate = await tx.employmentRecord.findFirst({
-          where: {
-            organizationId,
-            OR: [
-              x.employeeCode ? { employeeCode: x.employeeCode } : undefined,
-              x.externalEmployeeId ? { externalEmployeeId: x.externalEmployeeId } : undefined,
-              { careerProfile: { user: { email: x.companyEmail } } }
-            ].filter(Boolean) as object[]
-          },
+          where: { organizationId, OR: duplicateConditions },
           select: { id: true }
         });
 

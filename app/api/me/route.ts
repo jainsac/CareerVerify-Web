@@ -40,6 +40,7 @@ export async function GET() {
     id: user.id,
     name: user.name,
     email: user.email,
+    phone: user.phone,
     role: user.role,
     careerId: user.careerProfile?.careerId ?? null,
     careerProfile: user.careerProfile ? { id: user.careerProfile.id, careerId: user.careerProfile.careerId } : null,

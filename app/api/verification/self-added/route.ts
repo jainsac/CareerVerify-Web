@@ -1,30 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
-import { Prisma } from "@prisma/client";
-
-async function authorizedOrganizationIds(userId: string) {
-  const memberships = await prisma.organizationMember.findMany({
-    where: { userId },
-    select: { organizationId: true, organization: { select: { name: true, cin: true, gstin: true } } },
-  });
-
-  const ids = new Set(memberships.map(x => x.organizationId));
-  for (const membership of memberships) {
-    const org = membership.organization;
-    const conditions: Prisma.OrganizationWhereInput[] = [
-      { name: { equals: org.name, mode: "insensitive" } },
-    ];
-    if (org.cin) conditions.push({ cin: org.cin });
-    if (org.gstin) conditions.push({ gstin: org.gstin });
-    const matches = await prisma.organization.findMany({
-      where: { OR: conditions },
-      select: { id: true },
-    });
-    matches.forEach(x => ids.add(x.id));
-  }
-  return [...ids];
-}
 
 export async function GET() {
   const user = await currentUser();
@@ -32,31 +8,51 @@ export async function GET() {
     return NextResponse.json({ error: "Employer access required" }, { status: 401 });
   }
 
-  const orgIds = await authorizedOrganizationIds(user.id);
+  const memberships = await prisma.organizationMember.findMany({
+    where: { userId: user.id },
+    select: { organizationId: true, organization: { select: { name: true } } },
+  });
+
+  const orgIds = memberships.map((x) => x.organizationId);
+  const orgNames = memberships.map((x) => x.organization.name);
+
   if (!orgIds.length) return NextResponse.json([]);
 
+  // During onboarding, an employee may have added the company before the employer
+  // account was registered. Match the pending self-added record to the employer's
+  // organization by exact case-insensitive company name as a migration bridge.
   const rows = await prisma.employmentRecord.findMany({
-    where: { organizationId: { in: orgIds }, source: "SELF", verifiedAt: null },
+    where: {
+      source: "SELF",
+      verifiedAt: null,
+      OR: [
+        { organizationId: { in: orgIds } },
+        { organization: { name: { in: orgNames, mode: "insensitive" } } },
+      ],
+    },
     include: {
       careerProfile: { select: { careerId: true, user: { select: { name: true } } } },
-      organization: { select: { name: true } },
+      organization: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(rows.map(x => ({
-    id: x.id,
-    careerId: x.careerProfile.careerId,
-    employeeName: x.careerProfile.user.name,
-    organization: x.organization.name,
-    designation: x.designation,
-    department: x.department,
-    employeeCode: x.employeeCode,
-    employmentType: x.employmentType,
-    joinedAt: x.joinedAt,
-    leftAt: x.leftAt,
-    remarks: x.remarks,
-  })));
+  return NextResponse.json(
+    rows.map((x) => ({
+      id: x.id,
+      careerId: x.careerProfile.careerId,
+      employeeName: x.careerProfile.user.name,
+      organization: x.organization.name,
+      organizationId: x.organization.id,
+      designation: x.designation,
+      department: x.department,
+      employeeCode: x.employeeCode,
+      employmentType: x.employmentType,
+      joinedAt: x.joinedAt,
+      leftAt: x.leftAt,
+      remarks: x.remarks,
+    })),
+  );
 }
 
 export async function PATCH(req: Request) {
@@ -68,24 +64,41 @@ export async function PATCH(req: Request) {
   const b = await req.json();
   const id = String(b.employmentId ?? "").trim();
   const action = b.action === "VERIFY" ? "VERIFY" : b.action === "REJECT" ? "REJECT" : "";
+
   if (!id || !action) {
     return NextResponse.json({ error: "employmentId and action are required" }, { status: 400 });
   }
 
-  const orgIds = await authorizedOrganizationIds(user.id);
-  const record = await prisma.employmentRecord.findFirst({
-    where: { id, organizationId: { in: orgIds }, source: "SELF" },
+  const memberships = await prisma.organizationMember.findMany({
+    where: { userId: user.id },
+    select: { organizationId: true, organization: { select: { name: true } } },
   });
 
-  if (!record) {
-    return NextResponse.json({ error: "Self-added employment record not found or not authorized." }, { status: 404 });
+  const orgIds = memberships.map((x) => x.organizationId);
+  const orgNames = memberships.map((x) => x.organization.name);
+
+  const record = await prisma.employmentRecord.findUnique({
+    where: { id },
+    include: { organization: { select: { name: true } } },
+  });
+
+  if (
+    !record ||
+    record.source !== "SELF" ||
+    !(
+      orgIds.includes(record.organizationId) ||
+      orgNames.some((name) => name.toLowerCase() === record.organization.name.toLowerCase())
+    )
+  ) {
+    return NextResponse.json({ error: "You are not authorized for this employment record" }, { status: 403 });
   }
 
   if (action === "VERIFY") {
     const updated = await prisma.employmentRecord.update({
       where: { id },
-      data: { verifiedAt: new Date(), status: record.status === "DISPUTED" ? "DISPUTED" : record.status },
+      data: { verifiedAt: new Date() },
     });
+
     await prisma.auditEvent.create({
       data: {
         actorUserId: user.id,
@@ -95,6 +108,7 @@ export async function PATCH(req: Request) {
         metadata: { organizationId: record.organizationId },
       },
     });
+
     return NextResponse.json({ ok: true, employment: updated });
   }
 
@@ -107,6 +121,7 @@ export async function PATCH(req: Request) {
         : "Employer rejected self-added record.",
     },
   });
+
   await prisma.auditEvent.create({
     data: {
       actorUserId: user.id,
@@ -116,5 +131,6 @@ export async function PATCH(req: Request) {
       metadata: { organizationId: record.organizationId, reason: String(b.reason ?? "") },
     },
   });
+
   return NextResponse.json({ ok: true });
 }

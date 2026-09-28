@@ -112,6 +112,9 @@ export default function Login() {
         <p className="muted">
           Employee: use your personal CareerVerify email/phone/Career ID. Employer: use the employer account credentials.
         </p>
+        <p className="muted">
+          <Link href="/forgot-password">Forgot password?</Link>
+        </p>
         <p className="muted"><Link href="/forgot-password">Forgot password?</Link></p>
 
         <p className="muted">

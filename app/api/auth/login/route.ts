@@ -7,24 +7,52 @@ export async function POST(req: Request) {
     const b = await req.json();
     const identifier = String(b.identifier ?? b.email ?? "").trim();
     const password = String(b.password ?? "");
+    const accountType = b.accountType === "EMPLOYER" ? "EMPLOYER" : "EMPLOYEE";
     const normalizedEmail = identifier.toLowerCase();
     const phone = identifier.replace(/\D/g, "");
+
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { email: normalizedEmail },
-          { phone: phone },
+          { phone },
           { careerProfile: { careerId: identifier.toUpperCase() } },
         ],
       },
     });
+
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
-      return NextResponse.json({ error: "Invalid email, phone number, Career ID, or password." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid email, phone number, Career ID, or password." },
+        { status: 401 },
+      );
     }
+
+    if (user.role !== accountType) {
+      return NextResponse.json(
+        {
+          error:
+            accountType === "EMPLOYER"
+              ? "This account is registered as an Employee account. Please select Employee."
+              : "This account is registered as an Employer account. Please select Employer.",
+        },
+        { status: 403 },
+      );
+    }
+
     const res = NextResponse.json({ ok: true, role: user.role });
-    res.cookies.set(sessionCookie, signSession(user.id), { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 604800 });
+    res.cookies.set(sessionCookie, signSession(user.id), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 604800,
+    });
     return res;
   } catch {
-    return NextResponse.json({ error: "Sign in could not be completed. Please try again." }, { status: 503 });
+    return NextResponse.json(
+      { error: "Sign in could not be completed. Please try again." },
+      { status: 503 },
+    );
   }
 }

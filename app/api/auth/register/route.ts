@@ -51,28 +51,42 @@ export async function POST(req: Request) {
     }
 
     const careerId = role === "EMPLOYEE" ? await generateUniqueCareerId() : undefined;
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        phone,
-        passwordHash: await hashPassword(password),
-        role,
-        careerProfile: careerId ? { create: { careerId } } : undefined,
-        ...(role === "EMPLOYER"
-          ? {
-              employerOrganizationRequests: {
-                create: {
-                  name: companyName,
-                  cin: cin || undefined,
-                  gstin: gstin || undefined,
-                  certificatePath,
-                  verificationStatus: "PENDING",
-                },
-              },
-            }
-          : {}),
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          name,
+          email,
+          phone,
+          passwordHash: await hashPassword(password),
+          role,
+          careerProfile: careerId ? { create: { careerId } } : undefined,
+        },
+      });
+
+      if (role === "EMPLOYER") {
+        const org = await tx.organization.create({
+          data: {
+            name: companyName,
+            cin: cin || undefined,
+            gstin: gstin || undefined,
+            certificatePath,
+            verificationStatus: "PENDING",
+            createdByUserId: createdUser.id,
+            members: { create: { userId: createdUser.id, role: "OWNER" } },
+          },
+        });
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: createdUser.id,
+            action: "EMPLOYER_REGISTRATION_SUBMITTED",
+            entityType: "Organization",
+            entityId: org.id,
+            metadata: { verificationStatus: "PENDING" },
+          },
+        });
+      }
+
+      return createdUser;
     });
 
     const res = NextResponse.json({ ok: true, userId: user.id, careerId, employerVerification: role === "EMPLOYER" ? "PENDING" : undefined });

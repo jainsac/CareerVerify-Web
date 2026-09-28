@@ -90,6 +90,7 @@ export default function Employer() {
   const [requests, setRequests] = useState<Item[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const load = () =>
     fetch("/api/verification/sent")

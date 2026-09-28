@@ -64,24 +64,39 @@ export async function POST(req: Request) {
       });
 
       if (role === "EMPLOYER") {
-        const org = await tx.organization.create({
-          data: {
-            name: companyName,
-            cin: cin || undefined,
-            gstin: gstin || undefined,
-            certificatePath,
-            verificationStatus: "PENDING",
-            createdByUserId: createdUser.id,
-            members: { create: { userId: createdUser.id, role: "OWNER" } },
-          },
+        const existingOrg = await tx.organization.findFirst({
+          where: { name: { equals: companyName, mode: "insensitive" }, verifiedAt: null, verificationStatus: { not: "APPROVED" } },
         });
+        const org = existingOrg
+          ? await tx.organization.update({
+              where: { id: existingOrg.id },
+              data: {
+                cin: existingOrg.cin || cin || undefined,
+                gstin: existingOrg.gstin || gstin || undefined,
+                certificatePath,
+                verificationStatus: "PENDING",
+                createdByUserId: createdUser.id,
+                members: { create: { userId: createdUser.id, role: "OWNER" } },
+              },
+            })
+          : await tx.organization.create({
+              data: {
+                name: companyName,
+                cin: cin || undefined,
+                gstin: gstin || undefined,
+                certificatePath,
+                verificationStatus: "PENDING",
+                createdByUserId: createdUser.id,
+                members: { create: { userId: createdUser.id, role: "OWNER" } },
+              },
+            });
         await tx.auditEvent.create({
           data: {
             actorUserId: createdUser.id,
             action: "EMPLOYER_REGISTRATION_SUBMITTED",
             entityType: "Organization",
             entityId: org.id,
-            metadata: { verificationStatus: "PENDING" },
+            metadata: { verificationStatus: "PENDING", linkedExistingUnverifiedCompany: Boolean(existingOrg) },
           },
         });
       }

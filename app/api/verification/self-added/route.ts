@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
+import { Prisma } from "@prisma/client";
 
 async function authorizedOrganizationIds(userId: string) {
   const memberships = await prisma.organizationMember.findMany({
@@ -11,14 +12,13 @@ async function authorizedOrganizationIds(userId: string) {
   const ids = new Set(memberships.map(x => x.organizationId));
   for (const membership of memberships) {
     const org = membership.organization;
+    const conditions: Prisma.OrganizationWhereInput[] = [
+      { name: { equals: org.name, mode: "insensitive" } },
+    ];
+    if (org.cin) conditions.push({ cin: org.cin });
+    if (org.gstin) conditions.push({ gstin: org.gstin });
     const matches = await prisma.organization.findMany({
-      where: {
-        OR: [
-          org.cin ? { cin: org.cin } : undefined,
-          org.gstin ? { gstin: org.gstin } : undefined,
-          { name: { equals: org.name, mode: "insensitive" } },
-        ].filter(Boolean) as Array<Record<string, string | { equals: string; mode: "insensitive" }>>,
-      },
+      where: { OR: conditions },
       select: { id: true },
     });
     matches.forEach(x => ids.add(x.id));

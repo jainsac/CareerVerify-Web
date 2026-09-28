@@ -53,7 +53,6 @@ model User {
   notifications Notification[]
   passwordResetTokens PasswordResetToken[]
   employerOrganizationRequests Organization[] @relation("EmployerOwner")
-  passwordResetTokens PasswordResetToken[]
 }
 
 model PasswordResetToken {
@@ -446,17 +445,6 @@ model PublicVerificationToken {
   revokedAt DateTime?
   createdAt DateTime @default(now())
   careerProfile CareerProfile @relation(fields: [careerProfileId], references: [id], onDelete: Cascade)
-}
-
-model PasswordResetToken {
-  id String @id @default(cuid())
-  userId String
-  tokenHash String @unique
-  expiresAt DateTime
-  usedAt DateTime?
-  createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@index([userId, expiresAt])
 }
 
 model Notification {

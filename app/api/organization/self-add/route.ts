@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { currentUser } from "../../../../lib/auth";
+import { prisma } from "../../../../lib/prisma";
 
 export async function POST(req: Request) {
   const user = await currentUser();
@@ -19,10 +19,13 @@ export async function POST(req: Request) {
 
   const existing = await prisma.organization.findFirst({
     where: {
-      name: { equals: name, mode: "insensitive" },
-      ...(cin || gstin ? { OR: [{ cin: cin || undefined }, { gstin: gstin || undefined }] } : {}),
+      OR: [
+        { name: { equals: name, mode: "insensitive" } },
+        ...(cin ? [{ cin }] : []),
+        ...(gstin ? [{ gstin }] : []),
+      ],
     },
-    select: { id: true, name: true, cin: true, gstin: true, verifiedAt: true },
+    select: { id: true, name: true, cin: true, gstin: true, verifiedAt: true, verificationStatus: true },
   });
 
   if (existing) return NextResponse.json({ organization: existing });
@@ -32,8 +35,9 @@ export async function POST(req: Request) {
       name,
       cin: cin || undefined,
       gstin: gstin || undefined,
+      verificationStatus: "PENDING",
     },
-    select: { id: true, name: true, cin: true, gstin: true, verifiedAt: true },
+    select: { id: true, name: true, cin: true, gstin: true, verifiedAt: true, verificationStatus: true },
   });
 
   await prisma.auditEvent.create({

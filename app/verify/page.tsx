@@ -1,51 +1,59 @@
 "use client";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-export default function Verify(){
-  const [loggedIn,setLoggedIn]=useState(false);
-  const [role,setRole]=useState<"EMPLOYER"|"ADMIN"|"EMPLOYEE"|null>(null);
-  const [checking,setChecking]=useState(true);
+export default function Verify() {
+  const [role, setRole] = useState<"EMPLOYER" | "ADMIN" | null>(null);
+  const [checking, setChecking] = useState(true);
 
-  useEffect(()=>{
+  useEffect(() => {
     fetch("/api/me")
-      .then(async r=>{
-        if(!r.ok){
-          setLoggedIn(false);
+      .then(async (r) => {
+        if (!r.ok) {
+          setRole(null);
           setChecking(false);
           return;
         }
-        const d=await r.json();
-        if(d.role!=="EMPLOYER" && d.role!=="ADMIN"){
+        const d = await r.json();
+        if (d.role !== "EMPLOYER" && d.role !== "ADMIN") {
           window.location.replace("/candidate");
           return;
         }
-        setLoggedIn(true);
         setRole(d.role);
         setChecking(false);
       })
-      .catch(()=>{
-        setLoggedIn(false);
+      .catch(() => {
+        setRole(null);
         setChecking(false);
       });
-  },[]);
+  }, []);
 
-  if(checking){
+  const dashboardHref = role === "EMPLOYER" ? "/employer" : role === "ADMIN" ? "/admin" : "/";
+  const dashboardLabel = role === "EMPLOYER" ? "Employer Dashboard" : role === "ADMIN" ? "Admin Dashboard" : "Dashboard";
+
+  if (checking) {
     return <div className="wrap"><div className="form card"><p className="muted">Loading…</p></div></div>;
   }
 
-  return <div className="wrap">
-    <nav className="nav">
-      <Link className="brand" href={loggedIn ? (role === "EMPLOYER" || role === "ADMIN" ? "/employer" : "/candidate") : "/"}>Career<span>Verify</span></Link>
-      {loggedIn ? <Link className="btn alt" href={role === "EMPLOYER" || role === "ADMIN" ? "/employer" : "/candidate"}>Dashboard</Link> : <Link href="/register">Register</Link>}
-    </nav>
-    <div className="form card">
-      <div className="pill">PUBLIC VERIFICATION</div>
-      <h1>Verify a Career ID</h1>
-      <p className="muted">Enter the Career ID or use a QR reference supplied by the employee. Only information approved for the verification flow should be returned.</p>
-      <div className="field"><label>Career ID</label><input placeholder="CV-IND-7F82-K4M9-29X6"/></div>
-      <button className="btn">Continue</button>
-      <p className="notice">Aadhaar, PAN, mobile, email and private employment history are not public Career ID data.</p>
+  return (
+    <div className="wrap">
+      <nav className="nav">
+        <Link className="brand" href={role ? dashboardHref : "/"}>Career<span>Verify</span></Link>
+        {role ? (
+          <Link className="btn alt" href={dashboardHref}>{dashboardLabel}</Link>
+        ) : (
+          <Link href="/register">Register</Link>
+        )}
+      </nav>
+      <div className="form card">
+        <div className="pill">EMPLOYER VERIFICATION</div>
+        <h1>Verify a Career ID</h1>
+        <p className="muted">Enter the Career ID or use a QR reference supplied by the employee. Only information approved for the verification flow should be returned.</p>
+        <div className="field"><label>Career ID</label><input placeholder="CV-IND-7F82-K4M9-29X6"/></div>
+        <button className="btn">Continue</button>
+        <p className="notice">Aadhaar, PAN, mobile, email and private employment history are not public Career ID data.</p>
+      </div>
     </div>
-  </div>
+  );
 }

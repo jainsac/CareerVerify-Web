@@ -29,8 +29,14 @@ function OrganizationSetup({ onCreated }: { onCreated: (o: Org) => void }) {
   const [gstin, setGstin] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   async function submit() {
+    setMsg("");
+    if (!name.trim() || (!cin.trim() && !gstin.trim())) {
+      setMsg("Company name and CIN or GSTIN are required.");
+      return;
+    }
     setBusy(true);
     const r = await fetch("/api/organization", {
       method: "POST",
@@ -62,7 +68,9 @@ function OrganizationSetup({ onCreated }: { onCreated: (o: Org) => void }) {
         <input value={gstin} onChange={(e) => setGstin(e.target.value)} />
       </div>
       {msg && <p className="notice">{msg}</p>}
+      <p className="muted">Enter at least one company identifier: CIN or GSTIN.</p>
       <button
+        type="button"
         className="btn"
         onClick={submit}
         disabled={busy || !name || (!cin && !gstin)}
@@ -97,6 +105,12 @@ export default function Employer() {
       });
     load();
   }, []);
+
+  async function logout() {
+    setLoggingOut(true);
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/login";
+  }
 
   async function find() {
     setMessage("");
@@ -152,6 +166,9 @@ export default function Employer() {
         <Link className="btn alt" href="/verification/incoming">
           Incoming
         </Link>
+        <button className="btn alt" type="button" onClick={logout} disabled={loggingOut}>
+          {loggingOut ? "Signing out…" : "Logout"}
+        </button>
       </nav>
 
       <div className="card">

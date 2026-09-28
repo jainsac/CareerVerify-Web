@@ -51,6 +51,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   notifications Notification[]
+  employerOrganizationRequests Organization[] @relation("EmployerOwner")
 }
 
 model CareerProfile {
@@ -71,6 +72,12 @@ model Organization {
   cin String?
   gstin String?
   verifiedAt DateTime?
+  verificationStatus String @default("PENDING")
+  certificatePath String?
+  reviewedAt DateTime?
+  reviewNote String?
+  createdByUserId String?
+  createdByUser User? @relation("EmployerOwner", fields: [createdByUserId], references: [id])
   members OrganizationMember[]
   employments EmploymentRecord[]
   branding OrganizationBranding?

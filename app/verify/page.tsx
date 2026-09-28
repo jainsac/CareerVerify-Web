@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 export default function Verify(){
   const [loggedIn,setLoggedIn]=useState(false);
+  const [role,setRole]=useState<"EMPLOYER"|"ADMIN"|"EMPLOYEE"|null>(null);
   const [checking,setChecking]=useState(true);
 
   useEffect(()=>{
@@ -20,6 +21,7 @@ export default function Verify(){
           return;
         }
         setLoggedIn(true);
+        setRole(d.role);
         setChecking(false);
       })
       .catch(()=>{
@@ -34,8 +36,8 @@ export default function Verify(){
 
   return <div className="wrap">
     <nav className="nav">
-      <Link className="brand" href={loggedIn ? "/candidate" : "/"}>Career<span>Verify</span></Link>
-      {loggedIn ? <Link className="btn alt" href="/candidate">Dashboard</Link> : <Link href="/register">Register</Link>}
+      <Link className="brand" href={loggedIn ? (role === "EMPLOYER" || role === "ADMIN" ? "/employer" : "/candidate") : "/"}>Career<span>Verify</span></Link>
+      {loggedIn ? <Link className="btn alt" href={role === "EMPLOYER" || role === "ADMIN" ? "/employer" : "/candidate"}>Dashboard</Link> : <Link href="/register">Register</Link>}
     </nav>
     <div className="form card">
       <div className="pill">PUBLIC VERIFICATION</div>

@@ -26,7 +26,7 @@ export async function GET() {
     priorOrganization: names.get(r.priorOrgId) ?? "Unknown organization",
     status: r.status,
     createdAt: r.createdAt,
-    expiresAt: r.expiresAt,
+    
     consentedAt: r.consentedAt,
     respondedAt: r.respondedAt,
     response: r.response ? {

@@ -20,8 +20,8 @@ export async function POST(req: Request) {
     include: { response: true },
   });
 
-  if (!request || request.expiresAt < new Date()) {
-    return NextResponse.json({ error: "Invalid or expired verification request" }, { status: 404 });
+  if (!request) {
+    return NextResponse.json({ error: "Verification request not found" }, { status: 404 });
   }
   if (!request.consentedAt) {
     return NextResponse.json({ error: "Employee consent is required before verification" }, { status: 403 });

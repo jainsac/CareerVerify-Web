@@ -16,7 +16,7 @@ export async function GET() {
   return NextResponse.json(rows.map(r => ({
     id: r.id, careerId: r.careerProfile.careerId, employeeName: r.careerProfile.user.name,
     requestingOrgId: r.requestingOrgId, priorOrgId: r.priorOrgId, status: r.status,
-    expiresAt: r.expiresAt, consentedAt: r.consentedAt, respondedAt: r.respondedAt,
+    consentedAt: r.consentedAt, respondedAt: r.respondedAt,
     response: r.response ? { verified: r.response.verified, designation: r.response.designation, joinedAt: r.response.joinedAt, leftAt: r.response.leftAt, notes: r.response.notes } : null,
   })));
 }

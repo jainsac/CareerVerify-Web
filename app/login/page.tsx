@@ -115,7 +115,6 @@ export default function Login() {
         <p className="muted">
           <Link href="/forgot-password">Forgot password?</Link>
         </p>
-        <p className="muted"><Link href="/forgot-password">Forgot password?</Link></p>
 
         <p className="muted">
           New here? <Link href="/register">Create an account</Link>

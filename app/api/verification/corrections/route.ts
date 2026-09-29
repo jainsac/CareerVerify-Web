@@ -18,6 +18,11 @@ export async function GET() {
     ...memberships.map(x => x.organizationId),
     ...ownedOrganizations.map(x => x.id),
   ])];
+  const accountOrganizations = await prisma.organization.findMany({
+    where: { id: { in: orgIds } },
+    select: { id: true, name: true },
+  });
+  const orgNames = accountOrganizations.map(x => x.name);
   if (!orgIds.length) return NextResponse.json([]);
 
   const issueRows = await prisma.employmentIssueRequest.findMany({

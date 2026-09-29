@@ -4,6 +4,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type Org = { id: string; name: string };
+type VerificationStats = {
+  total: number;
+  accepted: number;
+  rejected: number;
+  pending: number;
+  expired: number;
+};
+
 type Item = {
   id: string;
   careerId: string;
@@ -88,6 +96,8 @@ export default function Employer() {
   const [orgId, setOrgId] = useState("");
   const [priorId, setPriorId] = useState("");
   const [requests, setRequests] = useState<Item[]>([]);
+  const [stats, setStats] = useState<{ sent: VerificationStats; received: VerificationStats } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -97,6 +107,14 @@ export default function Employer() {
       .then((r) => (r.ok ? r.json() : []))
       .then(setRequests);
 
+  const loadStats = () => {
+    setStatsLoading(true);
+    return fetch("/api/verification/stats")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setStats)
+      .finally(() => setStatsLoading(false));
+  };
+
   useEffect(() => {
     fetch("/api/me")
       .then((r) => r.json())
@@ -105,6 +123,7 @@ export default function Employer() {
         if (d.organizations?.[0]) setOrgId(d.organizations[0].id);
       });
     load();
+    loadStats();
   }, []);
 
   async function logout() {
@@ -149,6 +168,7 @@ export default function Employer() {
     );
     if (r.ok) {
       load();
+      loadStats();
       setCareerId("");
       setPrior([]);
       setPriorId("");
@@ -253,6 +273,83 @@ export default function Employer() {
 
         {message && <p className="notice">{message}</p>}
       </div>
+
+      <section className="section">
+        <div className="card">
+          <div className="pill">VERIFICATION OVERVIEW</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <h2 style={{ marginBottom: 6 }}>Verification activity</h2>
+              <p className="muted" style={{ margin: 0 }}>All-time statistics for all organizations linked to this employer account.</p>
+            </div>
+            <button className="btn alt" type="button" onClick={loadStats} disabled={statsLoading}>
+              {statsLoading ? "Refreshing…" : "Refresh"}
+            </button>
+          </div>
+
+          {statsLoading && !stats ? (
+            <p className="muted" style={{ marginTop: 20 }}>Loading verification statistics…</p>
+          ) : stats ? (
+            <div style={{ marginTop: 20 }}>
+              <div className="grid">
+                <div className="card">
+                  <div className="pill">REQUESTS RAISED BY US</div>
+                  <h2 style={{ margin: "10px 0 4px" }}>{stats.sent.total}</h2>
+                  <p className="muted">Total requests sent to previous employers</p>
+                  <p><strong>{stats.sent.accepted}</strong> accepted • <strong>{stats.sent.rejected}</strong> rejected</p>
+                  <p className="muted">{stats.sent.pending} pending • {stats.sent.expired} expired</p>
+                </div>
+
+                <div className="card">
+                  <div className="pill">REQUESTS RECEIVED BY US</div>
+                  <h2 style={{ margin: "10px 0 4px" }}>{stats.received.total}</h2>
+                  <p className="muted">Total requests received from other employers</p>
+                  <p><strong>{stats.received.accepted}</strong> accepted • <strong>{stats.received.rejected}</strong> rejected</p>
+                  <p className="muted">{stats.received.pending} pending • {stats.received.expired} expired</p>
+                </div>
+              </div>
+
+              <div className="card" style={{ marginTop: 12 }}>
+                <h3>Detailed breakdown</h3>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: "left", padding: "10px 8px" }}>Category</th>
+                        <th style={{ textAlign: "right", padding: "10px 8px" }}>Total</th>
+                        <th style={{ textAlign: "right", padding: "10px 8px" }}>Accepted</th>
+                        <th style={{ textAlign: "right", padding: "10px 8px" }}>Rejected</th>
+                        <th style={{ textAlign: "right", padding: "10px 8px" }}>Pending</th>
+                        <th style={{ textAlign: "right", padding: "10px 8px" }}>Expired</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style={{ padding: "10px 8px" }}>Requests raised by us</td>
+                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.sent.total}</td>
+                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.sent.accepted}</td>
+                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.sent.rejected}</td>
+                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.sent.pending}</td>
+                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.sent.expired}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "10px 8px" }}>Requests received by us</td>
+                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.received.total}</td>
+                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.received.accepted}</td>
+                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.received.rejected}</td>
+                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.received.pending}</td>
+                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.received.expired}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="notice" style={{ marginTop: 20 }}>Verification statistics could not be loaded. Please refresh.</p>
+          )}
+        </div>
+      </section>
 
       <section className="section">
         <h2>Sent verification requests</h2>

@@ -57,9 +57,17 @@ export async function POST(req: Request) {
     where: { organizationId: record.organizationId },
     select: { userId: true },
   });
-  if (members.length) {
+  const owner = await prisma.organization.findUnique({
+    where: { id: record.organizationId },
+    select: { createdByUserId: true },
+  });
+  const recipientIds = [...new Set([
+    ...members.map(m => m.userId),
+    ...(owner?.createdByUserId ? [owner.createdByUserId] : []),
+  ])];
+  if (recipientIds.length) {
     await prisma.notification.createMany({
-      data: members.map(m => ({
+      data: recipientIds.map(userId => ({
         userId: m.userId,
         type: "EMPLOYMENT_CORRECTION_REQUEST",
         title: "Employee requested an experience correction",

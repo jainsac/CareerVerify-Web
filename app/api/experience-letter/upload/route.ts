@@ -16,5 +16,6 @@ export async function POST(req:Request){
  const blob=await put("experience-letters/"+u.careerProfile.id+"/"+crypto.randomUUID()+".pdf",file,{access:"private",addRandomSuffix:false});
  const result=await prisma.experienceLetter.upsert({where:{employmentRecordId:e.id},create:{employmentRecordId:e.id,documentRef:blob.pathname,storagePath:blob.pathname,documentHash},update:{documentRef:blob.pathname,storagePath:blob.pathname,documentHash,revokedAt:null}});
  await prisma.employmentRecord.update({where:{id:e.id},data:{experienceLetterRef:result.id}});
+ await prisma.employmentDocument.upsert({where:{id:""},create:{employmentRecordId:e.id,documentType:"EXPERIENCE_LETTER",title:"Experience Letter",source:"EMPLOYEE",documentRef:blob.pathname,storagePath:blob.pathname,documentHash},update:{}}).catch(async()=>{ await prisma.employmentDocument.create({data:{employmentRecordId:e.id,documentType:"EXPERIENCE_LETTER",title:"Experience Letter",source:"EMPLOYEE",documentRef:blob.pathname,storagePath:blob.pathname,documentHash}}); });
  return NextResponse.json({ok:true,letterId:result.id,storagePath:blob.pathname,documentHash});
 }

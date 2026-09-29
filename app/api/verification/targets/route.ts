@@ -25,20 +25,21 @@ export async function GET(req: Request) {
   });
 
   const grouped = new Map<string, {
-    id:string; name:string; verified:boolean; experiences:number; latestDesignation:string; joinedAt:string; leftAt:string|null; documents:unknown[];
+    id:string; name:string; verified:boolean; latestEmploymentId:string; experiences:number; latestDesignation:string; joinedAt:string; leftAt:string|null; documents:unknown[];
   }>();
 
   for (const x of employments) {
     const current = grouped.get(x.organization.id);
     if (!current) {
       grouped.set(x.organization.id, {
-        id:x.organization.id, name:x.organization.name, verified:Boolean(x.verifiedAt), experiences:1,
+        id:x.organization.id, name:x.organization.name, verified:Boolean(x.verifiedAt), latestEmploymentId:x.id, experiences:1,
         latestDesignation:x.designation, joinedAt:x.joinedAt.toISOString(), leftAt:x.leftAt?.toISOString()||null, documents:x.documents,
       });
     } else {
       current.experiences += 1;
       current.verified = current.verified || Boolean(x.verifiedAt);
       if (x.joinedAt > new Date(current.joinedAt)) {
+        current.latestEmploymentId=x.id;
         current.latestDesignation=x.designation;
         current.joinedAt=x.joinedAt.toISOString();
         current.leftAt=x.leftAt?.toISOString()||null;

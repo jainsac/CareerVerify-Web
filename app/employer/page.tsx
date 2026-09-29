@@ -158,7 +158,7 @@ export default function Employer() {
   return (
     <div className="wrap">
       <nav className="nav">
-        <Link className="brand" href="/">
+        <Link className="brand" href="/employer">
           Career<span>Verify</span>
         </Link>
         <Link className="btn alt" href="/verify">

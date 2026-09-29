@@ -195,6 +195,7 @@ model EmploymentRecord {
   verifiedAt DateTime?
   editUnlockedAt DateTime?
   editUnlockReason String?
+  reverificationPendingAt DateTime?
   experienceLetterRef String?
   experienceLetter ExperienceLetter?
   documents EmploymentDocument[]

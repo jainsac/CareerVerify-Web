@@ -417,7 +417,7 @@ model VerificationRequest {
   priorOrgId String
   status VerificationStatus @default(PENDING)
   tokenHash String @unique
-  expiresAt DateTime
+  expiresAt DateTime?
   consentedAt DateTime?
   respondedAt DateTime?
   careerProfile CareerProfile @relation(fields: [careerProfileId], references: [id], onDelete: Cascade)

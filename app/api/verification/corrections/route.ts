@@ -23,7 +23,12 @@ export async function GET() {
   const issueRows = await prisma.employmentIssueRequest.findMany({
     where: {
       status: "PENDING",
-      employmentRecord: { organizationId: { in: orgIds } },
+      employmentRecord: {
+        OR: [
+          { organizationId: { in: orgIds } },
+          { organization: { name: { in: orgNames, mode: "insensitive" } } },
+        ],
+      },
     },
     include: {
       employmentRecord: {
@@ -38,7 +43,10 @@ export async function GET() {
 
   const reverificationRows = await prisma.employmentRecord.findMany({
     where: {
-      organizationId: { in: orgIds },
+      OR: [
+        { organizationId: { in: orgIds } },
+        { organization: { name: { in: orgNames, mode: "insensitive" } } },
+      ],
       reverificationPendingAt: { not: null },
     },
     include: {
@@ -107,7 +115,14 @@ export async function PATCH(req: Request) {
         where: { id: issue.employmentRecord.organizationId, createdByUserId: user.id },
         select: { id: true },
       });
-      if (!membership && !owned) return NextResponse.json({ error: "You are not authorized for this employer" }, { status: 403 });
+      const accountOrg = await prisma.organization.findFirst({
+        where: {
+          id: issue.employmentRecord.organizationId,
+          name: { in: orgNames, mode: "insensitive" },
+        },
+        select: { id: true },
+      });
+      if (!membership && !owned && !accountOrg) return NextResponse.json({ error: "You are not authorized for this employer" }, { status: 403 });
       if (issue.status !== "PENDING") return NextResponse.json({ error: "This correction request is already closed" }, { status: 409 });
 
       const now = new Date();

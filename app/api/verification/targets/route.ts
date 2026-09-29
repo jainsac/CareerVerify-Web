@@ -43,7 +43,6 @@ export async function GET(req: Request) {
         current.latestEmploymentId = x.id;
       }
       if (x.joinedAt > new Date(current.joinedAt)) {
-        current.latestEmploymentId=x.id;
         current.latestDesignation=x.designation;
         current.joinedAt=x.joinedAt.toISOString();
         current.leftAt=x.leftAt?.toISOString()||null;

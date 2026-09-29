@@ -43,10 +43,14 @@ export async function POST(req: Request) {
 
   const employment = await prisma.employmentRecord.findFirst({
     where: { careerProfileId: profile.id, organizationId: priorOrgId },
-    select: { id: true },
+    select: { id: true, verifiedAt: true },
+    orderBy: { joinedAt: "desc" },
   });
   if (!employment) {
     return NextResponse.json({ error: "No employment record found for the selected prior organization" }, { status: 404 });
+  }
+  if (employment.verifiedAt) {
+    return NextResponse.json({ error: "This experience is already verified by the prior employer. Use Request Additional Information instead.", code: "ALREADY_VERIFIED" }, { status: 409 });
   }
 
   const { token, tokenHash } = createOpaqueToken();

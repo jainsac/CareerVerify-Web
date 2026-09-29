@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-type Org = { id: string; name: string };
+type Org = { id: string; name: string; verified?: boolean; latestEmploymentId?: string; experiences?: number };
 type VerificationStats = {
   total: number;
   accepted: number;
@@ -145,6 +145,22 @@ export default function Employer() {
     if (d[0]) setPriorId(d[0].id);
   }
 
+  async function requestAdditionalInformation() {
+    const question = window.prompt("What additional information do you need from the prior employer?");
+    if (!question?.trim()) return;
+    setBusy(true);
+    setMessage("");
+    const selected = prior.find((x) => x.id === priorId);
+    const r = await fetch("/api/verification/additional-info", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ employmentRecordId: selected?.latestEmploymentId, requestingOrgId: orgId, question: question.trim() }),
+    });
+    const d = await r.json();
+    setBusy(false);
+    setMessage(r.ok ? "Additional information request sent to the prior employer." : d.error || "Request failed");
+  }
+
   async function request() {
     setBusy(true);
     setMessage("");
@@ -238,19 +254,24 @@ export default function Employer() {
                   >
                     {prior.map((o) => (
                       <option key={o.id} value={o.id}>
-                        {o.name}
+                        {o.name}{o.verified ? " • Verified" : " • Verification required"}
                       </option>
                     ))}
                   </select>
                 </div>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={request}
-                  disabled={busy || !priorId}
-                >
-                  {busy ? "Creating…" : "Request verification"}
-                </button>
+                {prior.find((x) => x.id === priorId)?.verified ? (
+                  <div className="card" style={{ marginTop: 12 }}>
+                    <div className="pill" style={{ borderColor: "#15803d", color: "#15803d" }}>✓ VERIFIED EXPERIENCE</div>
+                    <p className="muted">This employee's experience with this employer is already verified. A new basic verification request is not required.</p>
+                    <button className="btn" type="button" onClick={requestAdditionalInformation} disabled={busy || !priorId || !prior.find((x) => x.id === priorId)?.latestEmploymentId}>
+                      {busy ? "Sending…" : "Request Additional Information"}
+                    </button>
+                  </div>
+                ) : (
+                  <button className="btn" type="button" onClick={request} disabled={busy || !priorId}>
+                    {busy ? "Creating…" : "Request verification"}
+                  </button>
+                )}
               </>
             )}
           </>

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const request = await prisma.verificationRequest.findFirst({
     where: { id: requestId, careerProfileId: user.careerProfile.id },
   });
-  if (!request || request.expiresAt < new Date()) return NextResponse.json({ error: "Verification request not found or expired" }, { status: 404 });
+  if (!request) return NextResponse.json({ error: "Verification request not found" }, { status: 404 });
   if (request.status !== "PENDING") return NextResponse.json({ error: "Verification request is no longer pending" }, { status: 409 });
 
   const updated = await prisma.verificationRequest.update({

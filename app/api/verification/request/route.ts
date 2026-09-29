@@ -38,8 +38,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Requesting and prior organization must be different" }, { status: 400 });
   }
 
-  const existing = await prisma.verificationRequest.findFirst({ where: { careerProfileId: profile.id, requestingOrgId, priorOrgId, status: "PENDING", expiresAt: { gt: new Date() } }, select: { id: true, expiresAt: true } });
-  if (existing) return NextResponse.json({ error: "An active verification request already exists", requestId: existing.id, expiresAt: existing.expiresAt }, { status: 409 });
+  const existing = await prisma.verificationRequest.findFirst({ where: { careerProfileId: profile.id, requestingOrgId, priorOrgId, status: "PENDING" }, select: { id: true } });
+  if (existing) return NextResponse.json({ error: "An active verification request already exists", requestId: existing.id }, { status: 409 });
 
   const employment = await prisma.employmentRecord.findFirst({
     where: { careerProfileId: profile.id, organizationId: priorOrgId },
@@ -50,14 +50,12 @@ export async function POST(req: Request) {
   }
 
   const { token, tokenHash } = createOpaqueToken();
-  const expiresAt = new Date(Date.now() + 7 * 86400000);
   const row = await prisma.verificationRequest.create({
     data: {
       careerProfileId: profile.id,
       requestingOrgId,
       priorOrgId,
       tokenHash,
-      expiresAt,
     },
   });
 
@@ -73,5 +71,5 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ requestId: row.id, verificationToken: token, expiresAt }, { status: 201 });
+  return NextResponse.json({ requestId: row.id, verificationToken: token, expiresAt: null }, { status: 201 });
 }

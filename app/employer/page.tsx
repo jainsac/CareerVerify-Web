@@ -9,7 +9,6 @@ type VerificationStats = {
   accepted: number;
   rejected: number;
   pending: number;
-  expired: number;
 };
 
 type Item = {
@@ -19,7 +18,6 @@ type Item = {
   priorOrganization: string;
   status: string;
   createdAt: string;
-  expiresAt: string;
   consentedAt?: string | null;
   respondedAt?: string | null;
   response?: {

@@ -13,8 +13,39 @@ export async function GET(req: Request) {
 
   const employments = await prisma.employmentRecord.findMany({
     where: { careerProfileId: profile.id },
-    select: { organization: { select: { id: true, name: true } } },
-    distinct: ["organizationId"],
+    select: {
+      organization: { select: { id: true, name: true } },
+      verifiedAt: true,
+      designation: true,
+      joinedAt: true,
+      leftAt: true,
+      documents: { select: { id: true, documentType: true, title: true, source: true, issuedAt: true, verifiedAt: true }, orderBy: { createdAt: "desc" } },
+    },
+    orderBy: { joinedAt: "desc" },
   });
-  return NextResponse.json(employments.map(x => x.organization));
+
+  const grouped = new Map<string, {
+    id:string; name:string; verified:boolean; experiences:number; latestDesignation:string; joinedAt:string; leftAt:string|null; documents:unknown[];
+  }>();
+
+  for (const x of employments) {
+    const current = grouped.get(x.organization.id);
+    if (!current) {
+      grouped.set(x.organization.id, {
+        id:x.organization.id, name:x.organization.name, verified:Boolean(x.verifiedAt), experiences:1,
+        latestDesignation:x.designation, joinedAt:x.joinedAt.toISOString(), leftAt:x.leftAt?.toISOString()||null, documents:x.documents,
+      });
+    } else {
+      current.experiences += 1;
+      current.verified = current.verified || Boolean(x.verifiedAt);
+      if (x.joinedAt > new Date(current.joinedAt)) {
+        current.latestDesignation=x.designation;
+        current.joinedAt=x.joinedAt.toISOString();
+        current.leftAt=x.leftAt?.toISOString()||null;
+      }
+      current.documents=[...current.documents,...x.documents];
+    }
+  }
+
+  return NextResponse.json([...grouped.values()]);
 }

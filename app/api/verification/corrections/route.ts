@@ -10,7 +10,14 @@ export async function GET() {
     where: { userId: user.id },
     select: { organizationId: true },
   });
-  const orgIds = memberships.map(x => x.organizationId);
+  const ownedOrganizations = await prisma.organization.findMany({
+    where: { createdByUserId: user.id },
+    select: { id: true },
+  });
+  const orgIds = [...new Set([
+    ...memberships.map(x => x.organizationId),
+    ...ownedOrganizations.map(x => x.id),
+  ])];
   if (!orgIds.length) return NextResponse.json([]);
 
   const issueRows = await prisma.employmentIssueRequest.findMany({
@@ -96,7 +103,11 @@ export async function PATCH(req: Request) {
       const membership = await prisma.organizationMember.findFirst({
         where: { userId: user.id, organizationId: issue.employmentRecord.organizationId },
       });
-      if (!membership) return NextResponse.json({ error: "You are not authorized for this employer" }, { status: 403 });
+      const owned = await prisma.organization.findFirst({
+        where: { id: issue.employmentRecord.organizationId, createdByUserId: user.id },
+        select: { id: true },
+      });
+      if (!membership && !owned) return NextResponse.json({ error: "You are not authorized for this employer" }, { status: 403 });
       if (issue.status !== "PENDING") return NextResponse.json({ error: "This correction request is already closed" }, { status: 409 });
 
       const now = new Date();
@@ -163,7 +174,11 @@ export async function PATCH(req: Request) {
   const membership = await prisma.organizationMember.findFirst({
     where: { userId: user.id, organizationId: row.organizationId },
   });
-  if (!membership) return NextResponse.json({ error: "You are not authorized for this employer" }, { status: 403 });
+  const owned = await prisma.organization.findFirst({
+    where: { id: row.organizationId, createdByUserId: user.id },
+    select: { id: true },
+  });
+  if (!membership && !owned) return NextResponse.json({ error: "You are not authorized for this employer" }, { status: 403 });
 
   if (!approved) {
     const updated = await prisma.employmentRecord.update({

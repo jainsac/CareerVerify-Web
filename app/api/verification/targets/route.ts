@@ -14,6 +14,7 @@ export async function GET(req: Request) {
   const employments = await prisma.employmentRecord.findMany({
     where: { careerProfileId: profile.id },
     select: {
+      id: true,
       organization: { select: { id: true, name: true } },
       verifiedAt: true,
       designation: true,

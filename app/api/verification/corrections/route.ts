@@ -120,14 +120,7 @@ export async function PATCH(req: Request) {
         where: { id: issue.employmentRecord.organizationId, createdByUserId: user.id },
         select: { id: true },
       });
-      const accountOrg = await prisma.organization.findFirst({
-        where: {
-          id: issue.employmentRecord.organizationId,
-          name: { in: orgNames, mode: "insensitive" },
-        },
-        select: { id: true },
-      });
-      if (!membership && !owned && !accountOrg) return NextResponse.json({ error: "You are not authorized for this employer" }, { status: 403 });
+      if (!membership && !owned) return NextResponse.json({ error: "You are not authorized for this employer" }, { status: 403 });
       if (issue.status !== "PENDING") return NextResponse.json({ error: "This correction request is already closed" }, { status: 409 });
 
       const now = new Date();

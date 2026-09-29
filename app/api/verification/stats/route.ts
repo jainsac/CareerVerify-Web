@@ -37,7 +37,7 @@ export async function GET() {
     accepted: rows.filter((r) => r.status === "VERIFIED" || r.status === "APPROVED").length,
     rejected: rows.filter((r) => r.status === "REJECTED").length,
     pending: rows.filter((r) => r.status === "PENDING").length,
-    expired: rows.filter((r) => r.status === "EXPIRED").length,
+    expired: 0,
   });
 
   return NextResponse.json({

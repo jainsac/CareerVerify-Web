@@ -200,6 +200,7 @@ model EmploymentRecord {
   experienceLetter ExperienceLetter?
   documents EmploymentDocument[]
   issueRequests EmploymentIssueRequest[]
+  additionalInformationRequests AdditionalInformationRequest[]
   remarks String?
   disputes EmploymentDispute[]
   companyEmployeeAccount CompanyEmployeeAccount?
@@ -420,6 +421,23 @@ model EmploymentIssueRequest {
   updatedAt DateTime @updatedAt
   employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
   @@index([employmentRecordId, status])
+}
+
+model AdditionalInformationRequest {
+  id String @id @default(cuid())
+  employmentRecordId String
+  requestingOrgId String
+  requestingUserId String
+  question String
+  status String @default("PENDING")
+  response String?
+  respondedByUserId String?
+  respondedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+  @@index([employmentRecordId, status])
+  @@index([requestingOrgId, status])
 }
 
 model ExperienceLetter {

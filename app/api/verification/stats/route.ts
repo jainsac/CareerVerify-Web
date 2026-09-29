@@ -16,8 +16,8 @@ export async function GET() {
 
   if (!orgIds.length) {
     return NextResponse.json({
-      sent: { total: 0, accepted: 0, rejected: 0, pending: 0, expired: 0 },
-      received: { total: 0, accepted: 0, rejected: 0, pending: 0, expired: 0 },
+      sent: { total: 0, accepted: 0, rejected: 0, pending: 0 },
+      received: { total: 0, accepted: 0, rejected: 0, pending: 0 },
     });
   }
 
@@ -37,7 +37,6 @@ export async function GET() {
     accepted: rows.filter((r) => r.status === "VERIFIED" || r.status === "APPROVED").length,
     rejected: rows.filter((r) => r.status === "REJECTED").length,
     pending: rows.filter((r) => r.status === "PENDING").length,
-    expired: 0,
   });
 
   return NextResponse.json({

@@ -68,7 +68,7 @@ export async function POST(req: Request) {
   if (recipientIds.length) {
     await prisma.notification.createMany({
       data: recipientIds.map(userId => ({
-        userId: m.userId,
+        userId,
         type: "EMPLOYMENT_CORRECTION_REQUEST",
         title: "Employee requested an experience correction",
         message: "An employee has reported an issue with a verified employment record and requested your review.",

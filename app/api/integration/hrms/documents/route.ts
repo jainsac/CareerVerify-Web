@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { prisma } from "../../../../lib/prisma";
+import { prisma } from "@/lib/prisma";
 
 function bearer(req: Request) {
   const value = req.headers.get("authorization") || "";
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
   if (!key || key.revokedAt) return NextResponse.json({ error: "Invalid or revoked integration key" }, { status: 401 });
 
-  const scopes = key.scopes.split(/[,s]+/).filter(Boolean);
+  const scopes = key.scopes.split(/[\s,]+/).filter(Boolean);
   if (!scopes.includes("documents:write") && !scopes.includes("hrms:write") && !scopes.includes("*")) {
     return NextResponse.json({ error: "Integration key does not have document write permission" }, { status: 403 });
   }

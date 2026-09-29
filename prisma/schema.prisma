@@ -193,8 +193,12 @@ model EmploymentRecord {
   source String @default("MANUAL")
   externalEmployeeId String?
   verifiedAt DateTime?
+  editUnlockedAt DateTime?
+  editUnlockReason String?
   experienceLetterRef String?
   experienceLetter ExperienceLetter?
+  documents EmploymentDocument[]
+  issueRequests EmploymentIssueRequest[]
   remarks String?
   disputes EmploymentDispute[]
   companyEmployeeAccount CompanyEmployeeAccount?
@@ -383,6 +387,38 @@ model EmploymentResignationEvent {
   createdAt DateTime @default(now())
   employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
   @@index([employmentRecordId, createdAt])
+}
+
+model EmploymentDocument {
+  id String @id @default(cuid())
+  employmentRecordId String
+  documentType String
+  title String
+  source String @default("EMPLOYER")
+  documentRef String?
+  storagePath String?
+  documentHash String?
+  issuedAt DateTime?
+  verifiedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+  @@index([employmentRecordId, documentType])
+}
+
+model EmploymentIssueRequest {
+  id String @id @default(cuid())
+  employmentRecordId String
+  raisedByUserId String
+  concern String
+  status String @default("PENDING")
+  employerResponse String?
+  reviewedByUserId String?
+  reviewedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employmentRecord EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+  @@index([employmentRecordId, status])
 }
 
 model ExperienceLetter {

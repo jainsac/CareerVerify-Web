@@ -297,7 +297,7 @@ export default function Employer() {
                   <h2 style={{ margin: "10px 0 4px" }}>{stats.sent.total}</h2>
                   <p className="muted">Total requests sent to previous employers</p>
                   <p><strong>{stats.sent.accepted}</strong> accepted • <strong>{stats.sent.rejected}</strong> rejected</p>
-                  <p className="muted">{stats.sent.pending} pending • {stats.sent.expired} expired</p>
+                  <p className="muted">{stats.sent.pending} pending • No automatic expiry</p>
                 </div>
 
                 <div className="card">
@@ -305,7 +305,7 @@ export default function Employer() {
                   <h2 style={{ margin: "10px 0 4px" }}>{stats.received.total}</h2>
                   <p className="muted">Total requests received from other employers</p>
                   <p><strong>{stats.received.accepted}</strong> accepted • <strong>{stats.received.rejected}</strong> rejected</p>
-                  <p className="muted">{stats.received.pending} pending • {stats.received.expired} expired</p>
+                  <p className="muted">{stats.received.pending} pending • No automatic expiry</p>
                 </div>
               </div>
 
@@ -320,7 +320,7 @@ export default function Employer() {
                         <th style={{ textAlign: "right", padding: "10px 8px" }}>Accepted</th>
                         <th style={{ textAlign: "right", padding: "10px 8px" }}>Rejected</th>
                         <th style={{ textAlign: "right", padding: "10px 8px" }}>Pending</th>
-                        <th style={{ textAlign: "right", padding: "10px 8px" }}>Expired</th>
+                        
                       </tr>
                     </thead>
                     <tbody>
@@ -330,7 +330,7 @@ export default function Employer() {
                         <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.sent.accepted}</td>
                         <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.sent.rejected}</td>
                         <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.sent.pending}</td>
-                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.sent.expired}</td>
+                        
                       </tr>
                       <tr>
                         <td style={{ padding: "10px 8px" }}>Requests received by us</td>
@@ -338,7 +338,7 @@ export default function Employer() {
                         <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.received.accepted}</td>
                         <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.received.rejected}</td>
                         <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.received.pending}</td>
-                        <td style={{ textAlign: "right", padding: "10px 8px" }}>{stats.received.expired}</td>
+                        
                       </tr>
                     </tbody>
                   </table>

@@ -38,7 +38,10 @@ export async function GET(req: Request) {
       });
     } else {
       current.experiences += 1;
-      current.verified = current.verified || Boolean(x.verifiedAt);
+      if (x.verifiedAt) {
+        current.verified = true;
+        current.latestEmploymentId = x.id;
+      }
       if (x.joinedAt > new Date(current.joinedAt)) {
         current.latestEmploymentId=x.id;
         current.latestDesignation=x.designation;

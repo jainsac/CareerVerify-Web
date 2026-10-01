@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const user = await currentUser();
-  if (!user || user.role === "EMPLOYEE") return NextResponse.json({ error: "Employer access required" }, { status: 401 });
+  if (!user || user.role === "EMPLOYEE") {
+    return NextResponse.json({ error: "Employer access required" }, { status: 401, headers: { "Cache-Control": "no-store" } });
+  }
 
   const [memberships, owned] = await Promise.all([
     prisma.organizationMember.findMany({ where: { userId: user.id }, select: { organizationId: true } }),
@@ -12,28 +14,41 @@ export async function GET() {
   ]);
 
   const orgIds = [...new Set([...memberships.map(x => x.organizationId), ...owned.map(x => x.id)])];
-  if (!orgIds.length) return NextResponse.json({ total: 0, verification: 0, corrections: 0, additionalInfo: 0 });
+
+  if (!orgIds.length) {
+    return NextResponse.json({ total: 0, verification: 0, corrections: 0, additionalInfo: 0 }, { headers: { "Cache-Control": "no-store" } });
+  }
 
   const [verification, corrections, additionalInfo] = await Promise.all([
-    prisma.verificationRequest.count({ where: { priorOrgId: { in: orgIds }, status: "PENDING" } }),
+    prisma.verificationRequest.count({
+      where: { priorOrgId: { in: orgIds }, status: "PENDING" },
+    }),
     prisma.employmentIssueRequest.count({
       where: {
         status: "PENDING",
-        employmentRecord: { organizationId: { in: orgIds } },
+        employmentRecord: {
+          OR: [
+            { organizationId: { in: orgIds } },
+            { organization: { createdByUserId: user.id } },
+          ],
+        },
       },
     }),
     prisma.additionalInformationRequest.count({
       where: {
         status: "PENDING",
-        employmentRecord: { organizationId: { in: orgIds } },
+        employmentRecord: {
+          OR: [
+            { organizationId: { in: orgIds } },
+            { organization: { createdByUserId: user.id } },
+          ],
+        },
       },
     }),
   ]);
 
-  return NextResponse.json({
-    total: verification + corrections + additionalInfo,
-    verification,
-    corrections,
-    additionalInfo,
-  });
+  return NextResponse.json(
+    { total: verification + corrections + additionalInfo, verification, corrections, additionalInfo },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

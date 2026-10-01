@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type Org = { id: string; name: string; verified?: boolean; latestEmploymentId?: string; experiences?: number };
+type PendingIncoming = { total: number; verification: number; corrections: number; additionalInfo: number };
 type VerificationStats = {
   total: number;
   accepted: number;
@@ -95,6 +96,7 @@ export default function Employer() {
   const [priorId, setPriorId] = useState("");
   const [requests, setRequests] = useState<Item[]>([]);
   const [stats, setStats] = useState<{ sent: VerificationStats; received: VerificationStats } | null>(null);
+  const [pendingIncoming, setPendingIncoming] = useState<PendingIncoming>({ total: 0, verification: 0, corrections: 0, additionalInfo: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -104,6 +106,8 @@ export default function Employer() {
     fetch("/api/verification/sent")
       .then((r) => (r.ok ? r.json() : []))
       .then(setRequests);
+
+  const loadPendingIncoming = () => fetch("/api/verification/pending-count").then((r) => (r.ok ? r.json() : { total: 0, verification: 0, corrections: 0, additionalInfo: 0 })).then(setPendingIncoming);
 
   const loadStats = () => {
     setStatsLoading(true);
@@ -122,6 +126,7 @@ export default function Employer() {
       });
     load();
     loadStats();
+    loadPendingIncoming();
   }, []);
 
   async function logout() {
@@ -198,8 +203,9 @@ export default function Employer() {
         <Link className="btn alt" href="/verify">
           Verify Career ID
         </Link>
-        <Link className="btn alt" href="/verification/incoming">
+        <Link className="btn alt" href="/verification/incoming" style={{ position: "relative" }}>
           Incoming
+          {pendingIncoming.total > 0 && <span style={{ marginLeft: 8, minWidth: 24, height: 24, padding: "0 7px", borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center", background: "#dc2626", color: "#fff", fontSize: 13, fontWeight: 800 }}>{pendingIncoming.total}</span>}
         </Link>
         <button className="btn alt" type="button" onClick={logout} disabled={loggingOut}>
           {loggingOut ? "Signing out…" : "Logout"}

@@ -107,7 +107,7 @@ export default function Employer() {
       .then((r) => (r.ok ? r.json() : []))
       .then(setRequests);
 
-  const loadPendingIncoming = () => fetch("/api/verification/pending-count").then((r) => (r.ok ? r.json() : { total: 0, verification: 0, corrections: 0, additionalInfo: 0 })).then(setPendingIncoming);
+  const loadPendingIncoming = () => fetch("/api/verification/pending-count", { cache: "no-store" }).then((r) => (r.ok ? r.json() : { total: 0, verification: 0, corrections: 0, additionalInfo: 0 })).then(setPendingIncoming);
 
   const loadStats = () => {
     setStatsLoading(true);
@@ -127,6 +127,8 @@ export default function Employer() {
     load();
     loadStats();
     loadPendingIncoming();
+    const timer = window.setInterval(loadPendingIncoming, 15000);
+    return () => window.clearInterval(timer);
   }, []);
 
   async function logout() {
@@ -205,7 +207,7 @@ export default function Employer() {
         </Link>
         <Link className="btn alt" href="/verification/incoming" style={{ position: "relative" }}>
           Incoming
-          {pendingIncoming.total > 0 && <span style={{ marginLeft: 8, minWidth: 24, height: 24, padding: "0 7px", borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center", background: "#dc2626", color: "#fff", fontSize: 13, fontWeight: 800 }}>{pendingIncoming.total}</span>}
+          <span style={{ marginLeft: 8, minWidth: 24, height: 24, padding: "0 7px", borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center", background: pendingIncoming.total > 0 ? "#dc2626" : "#94a3b8", color: "#fff", fontSize: 13, fontWeight: 800 }}>{pendingIncoming.total}</span>
         </Link>
         <button className="btn alt" type="button" onClick={logout} disabled={loggingOut}>
           {loggingOut ? "Signing out…" : "Logout"}

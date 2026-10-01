@@ -47,6 +47,7 @@ export async function GET() {
           OR: [
             { organizationId: { in: orgIds } },
             { organization: { createdByUserId: user.id } },
+            ...(orgNames.length ? [{ organization: { name: { in: orgNames, mode: "insensitive" } } }] : []),
           ],
         },
       },
